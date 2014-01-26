@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head profile="http://www.w3.org/2005/10/profile">
+        <title>Little Spartan</title>
+
+        <script type="text/javascript">
+
+            var _gaq = _gaq || [];
+            _gaq.push(['_setAccount', 'UA-46555705-1']);
+            _gaq.push(['_trackPageview']);
+
+            (function() {
+                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+            })();
+
+        </script>
+
+        <link rel="icon" type="image/ico" href="res/img/favicon.ico"/>
+        <link rel="stylesheet" type="text/css" href="res/css/main.css"/>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script type="text/javascript" src="lib/jquery.knob.js"></script>
+        <script type="text/javascript" src="res/bundle.js"></script>
+        <script type="text/javascript" src="res/templates.js"></script>
+        <script type="text/javascript" src="lib/SugarLab.js"></script>
+        <script  type="text/javascript" src="game.js"></script>
+    </head>
+    <body onload="start()">
+    <div class="content">
+        <h1 class="header">
+            Little Spartan
+        </h1>
+        <div class="canvas-container">
+            <canvas id="GameCanvas" width="800" height="600"></canvas>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="http://synsugarstudio.com">&copy Syntactic Sugar Studio 2013</a>
+        <p>
+            Made using <a href="https://sourceforge.net/projects/sugarlab/">SugarLab</a>
+        </p>
+        <ul class="nav-links">
+            <li><a href="http://synsugarstudio.com">Home</a></li>
+            <li><a href="http://synsugarstudio.com">Games</a></li>
+            <li><a href="http://synsugarstudio.com/press">Press</a></li>
+            <li><a href="http://synsugarstudio.com/trivisualizer">Trivisualizer</a></li>
+        </ul>
+    </div>
+    </body>
+</html>

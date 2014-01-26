@@ -1,0 +1,19 @@
+{
+  "name": "ld28",
+  "version": "0.0.0",
+  "description": "Ludum Dare 28 from Syntactic Sugar Studio",
+  "author": "Syntactic Sugar Studio",
+  "license": "BSD",
+  "dependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-uglify": "~0.2.2",
+    "grunt-contrib-concat": "~0.3.0",
+    "express": "~3.4.0",
+    "domjs": "~0.2.3",
+    "grunt-util": "~0.5.0",
+    "grunt-util-spawn": "0.0.2",
+    "grunt-shell": "~0.6.1",
+    "grunt-contrib-sass": "~0.6.0",
+    "grunt-contrib-compass": "~0.7.0"
+  }
+}

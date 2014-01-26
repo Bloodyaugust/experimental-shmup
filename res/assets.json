@@ -1,0 +1,53 @@
+{
+    "images": [
+        "img/animations/spartan/spartan-walk-left.png",
+        "img/animations/spartan/spartan-walk-right.png",
+        "img/animations/spartan/spartan-idle.png",
+        "img/animations/spartan/spartan-attack-right.png",
+        "img/animations/spartan/spartan-attack-left.png",
+        "img/animations/spartan/spartan-block-left.png",
+        "img/animations/spartan/spartan-block-right.png",
+        "img/animations/regular/regular-walk-left.png",
+        "img/animations/regular/regular-attack-left.png",
+        "img/animations/regular/regular-walk-right.png",
+        "img/animations/regular/regular-attack-right.png",
+        "img/backgrounds/background.png"
+    ],
+
+    "sounds": [
+
+    ],
+
+    "settings": {
+        "sound": true,
+        "difficulty": "EASY"
+    },
+
+    "persians": {
+        "regular": {
+            "health": 2,
+            "range": 50,
+            "moveSpeed": 1,
+            "type": "regular"
+        },
+        "armored": {
+            "health": 3,
+            "range": 50,
+            "moveSpeed": 0.5,
+            "type": "armored"
+        },
+        "archer": {
+            "health": 1,
+            "range": 400,
+            "moveSpeed": 1.5,
+            "type": "archer"
+        }
+    },
+
+    "keys": {
+        "left": 65,
+        "right": 68,
+        "block": 83,
+        "attack": 87
+    }
+}

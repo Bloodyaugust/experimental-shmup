@@ -1,0 +1,1 @@
+domjs = require('domjs/lib/html5')(document);
