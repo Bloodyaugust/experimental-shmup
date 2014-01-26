@@ -1,15 +1,15 @@
 @import "compass/css3/box-sizing";
 
 //Font
-$text-color: #771100;
+$text-color: #00CC00;
 
 //General UI
-$ui-highlight: #CCBB33;
-$ui-inactive: #AAAAAA;
-$ui-active: #E7E7E7;
-$background-color: #552211;
-$background-color-light: #CC2200;
-$background-color-alt: #AA9955;
+$ui-highlight: #006363;
+$ui-inactive: #A60000;
+$ui-active: #FF0000;
+$background-color: #5CCCCC;
+$background-color-light: #009999;
+$background-color-alt: #B9F73E;
 
 //Footer
 $footer-border-size: 0.3rem;
@@ -66,14 +66,6 @@ a:visited {
   border-bottom: 0.2rem solid $ui-highlight;
   background-color: $background-color-light;
   height: 100px;
-}
-
-h1.header:before {
-  content: 'Little Spartan';
-  font-family: 'Spatter';
-  position: absolute;
-  margin-left: 1rem;
-  font-size: 2rem;
 }
 
 .content {
@@ -171,21 +163,4 @@ a:hover {
 .modal .button:hover {
   opacity: 1 !important;
   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, $ui-active), color-stop(100%, darken($ui-active, 10%)));
-}
-
-.timer-wrapper {
-  position: relative;
-  height: 100px;
-  width: 100px;
-  top: -400px;
-  display: inline-block;
-
-  canvas {
-    background-color: transparent;
-  }
-}
-
-@font-face {
-  font-family: Spatter;
-  src: url('../fonts/Spatter.ttf') format('truetype');
 }

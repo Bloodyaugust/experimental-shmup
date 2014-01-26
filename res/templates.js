@@ -41,22 +41,6 @@
                     'Settings'
                 ),
                 div(
-                    {'class': 'button', 'id': 'sound'},
-                    'Sound On',
-                    h3(
-                        {'class': 'sound-toggle'},
-                        'TRUE'
-                    )
-                ),
-                div(
-                    {'class': 'button', 'id': 'difficulty'},
-                    'Difficulty',
-                    h3(
-                        {'class': 'difficulty-toggle'},
-                        'EASY'
-                    )
-                ),
-                div(
                     {'class': 'button', 'id': 'menu'},
                     'Menu'
                 )
@@ -68,7 +52,7 @@
                 h1(
                     a(
                         {'href': 'http://synsugarstudio.com'},
-                        'Made by Syntactic Sugar Studio for Ludum Dare 28'
+                        'Made by Syntactic Sugar Studio'
                     )
                 ),
                 div(
@@ -77,14 +61,6 @@
                         {'class': 'button', 'id': 'menu'},
                         'Menu'
                     )
-                )
-            )
-        },
-        spawnTimer: function () {
-            div(
-                {'class': 'timer-wrapper'},
-                input(
-                    {'type': 'text', 'value': '10', 'class': 'dial timer'}
                 )
             )
         }
