@@ -58,7 +58,10 @@
         "BLASTER": {
             "fighter": {
                 "weight": 50,
-                "type": "BLASTER"
+                "type": "BLASTER",
+                "clip": 2,
+                "fireInterval": 0.3,
+                "reloadTime": 1
             }
         },
         "ENGINE": {

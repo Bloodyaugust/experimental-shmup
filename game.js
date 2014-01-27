@@ -112,6 +112,39 @@ function Ship (config) {
     newBlueprintConfig.ship = me;
 
     me.blueprint = new Blueprint(newBlueprintConfig);
+
+    /*
+    Messages will follow the below format
+    {
+        sendTo: [           //For ENGINE modules
+            "ENGINE"
+        ],
+        message: 'IMPULSE'
+
+        /////////////////////
+
+        sendTo: [
+            "BLASTER"
+        ],
+        message: 'FIRE'
+
+        /////////////////////
+
+        sendTo: [
+            "ATTITUDE"
+        ],
+        message: 0 || 1     //CLOCKWISE or COUNTER-CLOCKWISE
+
+        /////////////////////
+
+        sendTo: [
+            "SHIELD"
+        ],
+        message: 'TOGGLE'
+
+        /////////////////////
+    }
+    */
     me.messageQueue = []; //queue of messages to be distributed to slots
 
     me.collider = new SL.Circle(config.location, me.blueprint.size);
@@ -216,8 +249,36 @@ function Module (config) {
 
     var buildModule = function () {
         me.BLASTER = function () {
-            me.update = function () {
+            me.timeToFire = 0;
+            me.currentClip = me.clip;
+            me.state = 'IDLE';
 
+            me.update = function () {
+                if (me.state !== 'IDLE') {
+                    if (me.state === 'RELOAD') {
+                        me.timeToFire -= app.deltaTime;
+                        if (me.timeToFire <= 0) {
+                            me.timeToFire = 0;
+                            me.currentClip = me.clip;
+                            me.state = 'IDLE';
+                        }
+                    }
+
+                    if (me.state === 'FIRING' && me.currentClip > 0) {
+                        if (me.timeToFire > 0) {
+                            me.timeToFire -= app.deltaTime;
+                        } else {
+                            me.currentClip--;
+                            me.timeToFire = me.fireInterval;
+                            me.fire();
+
+                            if (me.currentClip < 1) {
+                                me.state = 'RELOAD';
+                                me.timeToFire = me.reloadTime;
+                            }
+                        }
+                    }
+                }
             };
 
             me.draw = function () {
@@ -226,6 +287,16 @@ function Module (config) {
                     align: 'center',
                     text: 'B'
                 });
+            };
+
+            me.fire = function () {
+
+            };
+
+            me.readMessage = function (message) {
+                if (message === 'fire') {
+
+                }
             };
         };
 
@@ -273,6 +344,8 @@ function Module (config) {
     for (var i in config) {
         me[i] = config[i];
     }
+
+    me.collider = new SL.Circle(me.slot.location, me.weight / 2);
 
     buildModule(me);
 }
