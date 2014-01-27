@@ -13,5 +13,69 @@
 
     "keys": {
 
+    },
+
+    "blueprints": {
+        "fighter": {
+            "slots": [
+                {
+                    "type": "BLASTER",
+                    "location": {
+                        "x": 20,
+                        "y": 0
+                    }
+                },
+                {
+                    "type": "ENGINE",
+                    "location": {
+                        "x": -15,
+                        "y": 0
+                    }
+                },
+                {
+                    "type": "ATTITUDE",
+                    "location": {
+                        "x": -20,
+                        "y": -20
+                    }
+                },
+                {
+                    "type": "ATTITUDE",
+                    "location": {
+                        "x": -20,
+                        "y": 20
+                    }
+                }
+            ],
+            "weight": 50,
+            "maxWeight": 150,
+            "size": 20,
+            "name": "fighter"
+        }
+    },
+
+    "modules": {
+        "BLASTER": {
+            "fighter": {
+                "weight": 50,
+                "type": "BLASTER"
+            }
+        },
+        "ENGINE": {
+            "fighter": {
+                "impulse": 5,
+                "draw": 1,
+                "weight": 10,
+                "type": "ENGINE"
+            }
+        },
+        "ATTITUDE": {
+            "fighter": {
+                "impulse": 15,
+                "draw": 1,
+                "weight": 10,
+                "type": "ATTITUDE"
+            }
+        }
     }
 }

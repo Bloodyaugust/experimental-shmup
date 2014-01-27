@@ -1,9 +1,9 @@
 {
-  "name": "ld28",
+  "name": "experimentalSHMUP",
   "version": "0.0.0",
-  "description": "Ludum Dare 28 from Syntactic Sugar Studio",
+  "description": "An experiment project for SHMUP basics.",
   "author": "Syntactic Sugar Studio",
-  "license": "BSD",
+  "license": "MIT",
   "dependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-uglify": "~0.2.2",
