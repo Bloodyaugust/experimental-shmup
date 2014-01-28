@@ -1,6 +1,8 @@
 {
     "images": [
-        "img/hulls/fighter-hull.png"
+        "img/hulls/fighter-hull.png",
+        "img/hulls/fighter-blaster.png",
+        "img/hulls/fighter-engine.png"
     ],
 
     "sounds": [
@@ -21,28 +23,28 @@
                 {
                     "type": "BLASTER",
                     "location": {
-                        "x": 20,
+                        "x": 10,
                         "y": 0
                     }
                 },
                 {
                     "type": "ENGINE",
                     "location": {
-                        "x": -15,
+                        "x": -5,
                         "y": 0
                     }
                 },
                 {
                     "type": "ATTITUDE",
                     "location": {
-                        "x": -20,
+                        "x": -18,
                         "y": -20
                     }
                 },
                 {
                     "type": "ATTITUDE",
                     "location": {
-                        "x": -20,
+                        "x": -18,
                         "y": 20
                     }
                 }
@@ -59,6 +61,7 @@
             "fighter": {
                 "weight": 50,
                 "type": "BLASTER",
+                "name": "fighter-blaster",
                 "clip": 2,
                 "fireInterval": 0.3,
                 "reloadTime": 1
@@ -69,6 +72,7 @@
                 "impulse": 5,
                 "draw": 1,
                 "weight": 10,
+                "name": "fighter-engine",
                 "type": "ENGINE"
             }
         },
@@ -77,6 +81,7 @@
                 "impulse": 15,
                 "draw": 1,
                 "weight": 10,
+                "name": "fighter-attitude",
                 "type": "ATTITUDE"
             }
         }

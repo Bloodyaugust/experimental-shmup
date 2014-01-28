@@ -32,7 +32,7 @@ function start() {
                     location: app.screenSize.getScaled(0.5),
                     align: 'center',
                     text: app.assetCollection.getLoadedPercentage().toFixed() + '%',
-                    color: TEXT_COLOR,
+                    color: 'green',
                     font: '72px Arial'
                 });
             }
@@ -150,9 +150,13 @@ function Ship (config) {
     me.collider = new SL.Circle(config.location, me.blueprint.size);
     me.rotation = 0;
 
+    me.velocity = new SL.Vec2(0, 0);
+
     me.weight = me.blueprint.weight;
 
     me.update = function () {
+        var drag;
+
         me.blueprint.update();
 
         for (var i = 0; i < me.blueprint.slots.length; i++) {
@@ -160,6 +164,9 @@ function Ship (config) {
                 me.blueprint.slots[i].module.update();
             }
         }
+
+        drag = me.velocity.getScaled(-1).getNormal().getScaled(me.velocity.magnitude() * (me.weight / 10));
+        me.velocity.getTranslated(drag);
     };
 
     me.draw = function () {
@@ -197,21 +204,27 @@ function Ship (config) {
                 }
             }
         }
-    }
+    };
+
+    me.impulse = function (impulseVector) {
+        var actualVelocity = impulseVector.getScaled(1 / me.weight);
+        me.velocity.translate(actualVelocity);
+    };
 }
 
 function Blueprint (config) {
-    var me = this;
+    var me = this,
+        slots;
 
     for (var i in config) {
         me[i] = config[i];
     }
 
-    for (i = 0; i < me.slots.length; i++) {
-        var newConfig = me.slots[i];
-
-        newConfig.blueprint = me;
-        me.slots[i] = new Slot(newConfig);
+    slots = me.slots;
+    me.slots = [];
+    for (i = 0; i < slots.length; i++) {
+        me.slots.push(new Slot(slots[i]));
+        me.slots[i].blueprint = me;
     }
 
     me.image = app.assetCollection.getImage(me.name + '-hull.png');
@@ -282,10 +295,9 @@ function Module (config) {
             };
 
             me.draw = function () {
-                app.camera.drawText({
-                    location: me.ship.collider.origin.getTranslated(me.slot.location),
-                    align: 'center',
-                    text: 'B'
+                app.camera.drawImage({
+                    image: me.image,
+                    location: me.ship.collider.origin.getTranslated(me.slot.location)
                 });
             };
 
@@ -306,10 +318,9 @@ function Module (config) {
             };
 
             me.draw = function () {
-                app.camera.drawText({
-                    location: me.ship.collider.origin.getTranslated(me.slot.location),
-                    align: 'center',
-                    text: 'E'
+                app.camera.drawImage({
+                    image: me.image,
+                    location: me.ship.collider.origin.getTranslated(me.slot.location)
                 });
             };
         };
@@ -325,16 +336,20 @@ function Module (config) {
         };
 
         me.ATTITUDE = function () {
-            me.update = function () {
+            me.state = 'IDLE';
 
+            me.update = function () {
+                if (me.state === 'IMPULSE') {
+
+                }
             };
 
             me.draw = function () {
-                app.camera.drawText({
-                    location: me.ship.collider.origin.getTranslated(me.slot.location),
-                    align: 'center',
-                    text: 'A'
-                });
+                app.camera.drawCircle({
+                    origin: me.ship.collider.origin.getTranslated(me.slot.location),
+                    radius: 3,
+                    lineColor: 'green'
+                })
             };
         };
 
@@ -345,7 +360,7 @@ function Module (config) {
         me[i] = config[i];
     }
 
-    me.collider = new SL.Circle(me.slot.location, me.weight / 2);
+    me.image = app.assetCollection.getImage(me.name);
 
     buildModule(me);
 }
@@ -356,10 +371,25 @@ function test () {
         location: new SL.Vec2(0, 0)
     });
 
+
+    var testShip2 = new Ship({
+        blueprint: 'fighter',
+        location: new SL.Vec2(100, 0)
+    });
+
+    testShip.testID = 0;
+    testShip2.testID = 1;
+
     testShip.setSlotModule(testShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
     testShip.setSlotModule(testShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
     testShip.setSlotModule(testShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
     testShip.setSlotModule(testShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
 
+    testShip2.setSlotModule(testShip2.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    testShip2.setSlotModule(testShip2.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+    testShip2.setSlotModule(testShip2.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+    testShip2.setSlotModule(testShip2.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+
     app.currentScene.addEntity(testShip);
+    app.currentScene.addEntity(testShip2);
 }
