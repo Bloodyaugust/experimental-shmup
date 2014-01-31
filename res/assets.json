@@ -1,5 +1,6 @@
 {
     "images": [
+        "img/backgrounds/bg-1.png",
         "img/hulls/fighter-hull.png",
         "img/hulls/fighter-blaster.png",
         "img/hulls/fighter-engine.png"
@@ -50,7 +51,7 @@
                 }
             ],
             "weight": 50,
-            "maxWeight": 150,
+            "maxWeight": 200,
             "size": 20,
             "name": "fighter"
         }
@@ -71,16 +72,16 @@
             "fighter": {
                 "impulse": 5,
                 "draw": 1,
-                "weight": 10,
+                "weight": 40,
                 "name": "fighter-engine",
                 "type": "ENGINE"
             }
         },
         "ATTITUDE": {
             "fighter": {
-                "impulse": 15,
+                "impulse": 600,
                 "draw": 1,
-                "weight": 10,
+                "weight": 20,
                 "name": "fighter-attitude",
                 "type": "ATTITUDE"
             }

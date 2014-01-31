@@ -1,6 +1,7 @@
 SL = sugarLab;
 
-var CAMERA_OFFSET = new SL.Vec2(0, 0);
+var CAMERA_OFFSET = new SL.Vec2(0, 0),
+    ANGULAR_DRAG_MODIFIER = 10;
 
 function logPlay() {
     _gaq.push(['_trackEvent', 'Button', 'Play']);
@@ -91,6 +92,15 @@ function start() {
         });
 
         var gameScene = new SL.Scene('game', [], function () {
+            var bg = app.assetCollection.getImage('bg-1');
+
+            app.currentScene.addEntity({
+                update: function () {},
+                draw: function () { app.camera.drawImage({
+                    image: bg,
+                    location: new SL.Vec2(0, 0)
+                }); }
+            });
             test();
         });
 
@@ -119,7 +129,7 @@ function Ship (config) {
         sendTo: [           //For ENGINE modules
             "ENGINE"
         ],
-        message: 'IMPULSE'
+        message: 'TOGGLE'
 
         /////////////////////
 
@@ -145,28 +155,51 @@ function Ship (config) {
         /////////////////////
     }
     */
-    me.messageQueue = []; //queue of messages to be distributed to slots
+    me.messageBus = {
+        ENGINE: [],
+        BLASTER: [],
+        ATTITUDE: [],
+        TARGET: []
+    };
 
     me.collider = new SL.Circle(config.location, me.blueprint.size);
-    me.rotation = 0;
+    me.rotation = 90;
 
     me.velocity = new SL.Vec2(0, 0);
+    me.angularVelocity = 0;
 
     me.weight = me.blueprint.weight;
 
     me.update = function () {
         var drag;
 
+        for (var i in me.messageBus) {
+            for (var i2 = 0; i2 < me.messageBus[i].length; i2++) {
+                for (var i3 = 0; i3 < me.blueprint.slots.length; i3++) {
+                    if (i === me.blueprint.slots[i3].type && me.blueprint.slots[i3].module) {
+                        me.blueprint.slots[i3].module.message(me.messageBus[i][i2]);
+                    }
+                }
+            }
+            me.messageBus[i] = [];
+        }
+
         me.blueprint.update();
 
-        for (var i = 0; i < me.blueprint.slots.length; i++) {
+        for (i = 0; i < me.blueprint.slots.length; i++) {
             if (me.blueprint.slots[i].module) {
                 me.blueprint.slots[i].module.update();
             }
         }
 
-        drag = me.velocity.getScaled(-1).getNormal().getScaled(me.velocity.magnitude() * (me.weight / 10));
-        me.velocity.getTranslated(drag);
+        //TODO: Fix this crazy-ass drag shit
+
+        drag = me.velocity.getScaled(-1).getNormal().getScaled(1 / ((me.velocity.magnitude() + 1) * (me.weight / 1000)));
+        me.velocity.translate(drag.getScaled(app.deltaTime));
+        me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
+
+        me.angularVelocity += (-me.angularVelocity / ANGULAR_DRAG_MODIFIER) * (me.weight / 100);
+        me.rotation += me.angularVelocity * app.deltaTime;
     };
 
     me.draw = function () {
@@ -184,6 +217,22 @@ function Ship (config) {
                 me.blueprint.slots[i].module.draw();
             }
         }
+
+        app.camera.drawText({
+            text: me.velocity.x.toFixed(2) + '  ' + me.velocity.y.toFixed(2),
+            location: me.collider.origin.getTranslated(new SL.Vec2(0, 40)),
+            align: 'center'
+        });
+
+        app.camera.drawText({
+            text: me.angularVelocity.toFixed(2),
+            location: me.collider.origin.getTranslated(new SL.Vec2(0, 55)),
+            align: 'center'
+        });
+    };
+
+    me.message = function(type, message) {
+        me.messageBus[type].push(message);
     };
 
     me.setSlotModule = function (slot, module) {
@@ -209,6 +258,10 @@ function Ship (config) {
     me.impulse = function (impulseVector) {
         var actualVelocity = impulseVector.getScaled(1 / me.weight);
         me.velocity.translate(actualVelocity);
+    };
+
+    me.angularImpulse = function (impulse) {
+        me.angularVelocity += impulse * (1 / me.weight);
     };
 }
 
@@ -236,7 +289,8 @@ function Blueprint (config) {
     me.draw = function () {
         app.camera.drawImage({
             image: me.image,
-            location: me.ship.collider.origin
+            location: me.ship.collider.origin,
+            angle: me.ship.rotation
         });
     };
 }
@@ -267,6 +321,15 @@ function Module (config) {
             me.state = 'IDLE';
 
             me.update = function () {
+                for (var i = 0; i < me.messages.length; i++) {
+                    if (me.messages[i] === 'FIRE') {
+                        if (me.state === 'IDLE') {
+                            me.state = 'FIRING';
+                        }
+                    }
+                }
+                me.messages = [];
+
                 if (me.state !== 'IDLE') {
                     if (me.state === 'RELOAD') {
                         me.timeToFire -= app.deltaTime;
@@ -297,30 +360,41 @@ function Module (config) {
             me.draw = function () {
                 app.camera.drawImage({
                     image: me.image,
-                    location: me.ship.collider.origin.getTranslated(me.slot.location)
+                    location: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
+                    angle: me.ship.rotation
                 });
             };
 
             me.fire = function () {
 
             };
-
-            me.readMessage = function (message) {
-                if (message === 'fire') {
-
-                }
-            };
         };
 
         me.ENGINE = function () {
-            me.update = function () {
+            me.state = 'IDLE';
 
+            me.update = function () {
+                for (var i = 0; i < me.messages.length; i++) {
+                    if (me.messages[i] === 'TOGGLE') {
+                        if (me.state === 'IDLE') {
+                            me.state = 'IMPULSE';
+                        } else {
+                            me.state = 'IDLE'
+                        }
+                    }
+                }
+                me.messages = [];
+
+                if (me.state === 'IMPULSE') {
+                    me.ship.impulse(new SL.Vec2(0, 0).translateAlongRotation(me.impulse, me.ship.rotation).scale(me.impulse));
+                }
             };
 
             me.draw = function () {
                 app.camera.drawImage({
                     image: me.image,
-                    location: me.ship.collider.origin.getTranslated(me.slot.location)
+                    location: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
+                    angle: me.ship.rotation
                 });
             };
         };
@@ -336,17 +410,26 @@ function Module (config) {
         };
 
         me.ATTITUDE = function () {
-            me.state = 'IDLE';
+            me.state = 0;
 
             me.update = function () {
-                if (me.state === 'IMPULSE') {
+                for (var i = 0; i < me.messages.length; i++) {
+                    me.state = parseInt(me.messages[i]);
+                }
+                me.messages = [];
 
+                if (me.state > 0) {
+                    if (me.state === 1) {
+                        me.ship.angularImpulse(me.impulse);
+                    } else {
+                        me.ship.angularImpulse(-me.impulse);
+                    }
                 }
             };
 
             me.draw = function () {
                 app.camera.drawCircle({
-                    origin: me.ship.collider.origin.getTranslated(me.slot.location),
+                    origin: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
                     radius: 3,
                     lineColor: 'green'
                 })
@@ -361,6 +444,12 @@ function Module (config) {
     }
 
     me.image = app.assetCollection.getImage(me.name);
+
+    me.messages = [];
+
+    me.message = function (message) {
+        me.messages.push(message);
+    };
 
     buildModule(me);
 }
