@@ -1,6 +1,7 @@
 SL = sugarLab;
 
 var CAMERA_OFFSET = new SL.Vec2(0, 0),
+    BASE_ENGINE_SPEED = 50,
     ANGULAR_DRAG_MODIFIER = 10;
 
 function logPlay() {
@@ -168,6 +169,8 @@ function Ship (config) {
     me.velocity = new SL.Vec2(0, 0);
     me.angularVelocity = 0;
 
+    me.totalEngineImpulse = 0;
+
     me.weight = me.blueprint.weight;
 
     me.update = function () {
@@ -278,6 +281,13 @@ function Blueprint (config) {
     for (i = 0; i < slots.length; i++) {
         me.slots.push(new Slot(slots[i]));
         me.slots[i].blueprint = me;
+    }
+
+    me.maxSpeed = 0;
+    for (i = 0; i < me.slots.length; i++) {
+        if (me.slots[i].type === 'ENGINE') {
+            me.maxSpeed += BASE_ENGINE_SPEED;
+        }
     }
 
     me.image = app.assetCollection.getImage(me.name + '-hull.png');
