@@ -2,6 +2,8 @@ SL = sugarLab;
 
 var CAMERA_OFFSET = new SL.Vec2(0, 0),
     BASE_ENGINE_SPEED = 50,
+    MOMENTUM_PER_TON = 10,
+    MOMENTUM_DECAY_RATE = 100,
     ANGULAR_DRAG_MODIFIER = 10;
 
 function logPlay() {
@@ -169,12 +171,12 @@ function Ship (config) {
     me.velocity = new SL.Vec2(0, 0);
     me.angularVelocity = 0;
 
-    me.totalEngineImpulse = 0;
+    me.momentum = 0;
 
     me.weight = me.blueprint.weight;
 
     me.update = function () {
-        var drag;
+        var speed;
 
         for (var i in me.messageBus) {
             for (var i2 = 0; i2 < me.messageBus[i].length; i2++) {
@@ -195,10 +197,8 @@ function Ship (config) {
             }
         }
 
-        //TODO: Fix this crazy-ass drag shit
-
-        drag = me.velocity.getScaled(-1).getNormal().getScaled(1 / ((me.velocity.magnitude() + 1) * (me.weight / 1000)));
-        me.velocity.translate(drag.getScaled(app.deltaTime));
+        speed = SL.quadIn(me.maxSpeed, me.momentum / (me.weight * MOMENTUM_PER_TON));
+        me.velocity = SL.Vec2.fromPolar(speed, me.rotation);
         me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
 
         me.angularVelocity += (-me.angularVelocity / ANGULAR_DRAG_MODIFIER) * (me.weight / 100);
@@ -258,9 +258,8 @@ function Ship (config) {
         }
     };
 
-    me.impulse = function (impulseVector) {
-        var actualVelocity = impulseVector.getScaled(1 / me.weight);
-        me.velocity.translate(actualVelocity);
+    me.impulse = function (impulse) {
+        me.momentum += impulse;
     };
 
     me.angularImpulse = function (impulse) {
@@ -396,6 +395,7 @@ function Module (config) {
                 me.messages = [];
 
                 if (me.state === 'IMPULSE') {
+                    //TODO: Fix this
                     me.ship.impulse(new SL.Vec2(0, 0).translateAlongRotation(me.impulse, me.ship.rotation).scale(me.impulse));
                 }
             };
