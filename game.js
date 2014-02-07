@@ -197,7 +197,7 @@ function Ship (config) {
             }
         }
 
-        speed = SL.quadIn(me.maxSpeed, me.momentum / (me.weight * MOMENTUM_PER_TON));
+        speed = SL.Tween.quadIn(me.maxSpeed, me.momentum / (me.weight * MOMENTUM_PER_TON));
         me.velocity = SL.Vec2.fromPolar(speed, me.rotation);
         me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
 
