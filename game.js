@@ -98,11 +98,23 @@ function start() {
             var bg = app.assetCollection.getImage('bg-1');
 
             app.currentScene.addEntity({
-                update: function () {},
-                draw: function () { app.camera.drawImage({
-                    image: bg,
-                    location: new SL.Vec2(0, 0)
-                }); }
+                update: function () {
+                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
+                        app.camera.offset = new SL.Vec2(400, 300).translate(app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.getScaled(-1));
+                    }
+                },
+                draw: function () {
+                    var drawLocation = new SL.Vec2(0, 0);
+
+                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
+                        drawLocation = app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.clone();
+                    }
+
+                    app.camera.drawImage({
+                        image: bg,
+                        location: drawLocation
+                    });
+                }
             });
             test();
         });
@@ -121,6 +133,8 @@ function start() {
 function Ship (config) {
     var me = this,
         newBlueprintConfig = app.assetCollection.assets.blueprints[config.blueprint];
+
+    me.tag = 'SHIP';
 
     newBlueprintConfig.ship = me;
 
@@ -175,6 +189,8 @@ function Ship (config) {
 
     me.weight = me.blueprint.weight;
 
+    me.maxSpeed = 0;
+
     me.update = function () {
         var speed;
 
@@ -203,6 +219,9 @@ function Ship (config) {
 
         me.angularVelocity += (-me.angularVelocity / ANGULAR_DRAG_MODIFIER) * (me.weight / 100);
         me.rotation += me.angularVelocity * app.deltaTime;
+
+        me.momentum -= MOMENTUM_DECAY_RATE * app.deltaTime;
+        me.momentum = SL.clamp(me.momentum, 0, (me.weight * MOMENTUM_PER_TON));
     };
 
     me.draw = function () {
@@ -246,6 +265,7 @@ function Ship (config) {
                     slot.module = module;
                     slot.module.ship = me;
                     slot.module.slot = slot;
+                    me.evaluateMaxSpeed();
                 }
             } else {
                 if (me.weight + module.weight <= me.blueprint.maxWeight) {
@@ -253,17 +273,27 @@ function Ship (config) {
                     slot.module = module;
                     slot.module.ship = me;
                     slot.module.slot = slot;
+                    me.evaluateMaxSpeed();
                 }
             }
         }
     };
 
     me.impulse = function (impulse) {
-        me.momentum += impulse;
+        me.momentum += impulse * app.deltaTime;
     };
 
     me.angularImpulse = function (impulse) {
         me.angularVelocity += impulse * (1 / me.weight);
+    };
+
+    me.evaluateMaxSpeed = function () {
+        for (var i = 0; i < me.blueprint.slots.length; i++) {
+            if (me.blueprint.slots[i].type === 'ENGINE' && me.blueprint.slots[i].module) {
+                me.maxSpeed += me.blueprint.slots[i].module.speed;
+            }
+        }
+        me.maxSpeed /= (me.weight / 100);
     };
 }
 
@@ -280,13 +310,6 @@ function Blueprint (config) {
     for (i = 0; i < slots.length; i++) {
         me.slots.push(new Slot(slots[i]));
         me.slots[i].blueprint = me;
-    }
-
-    me.maxSpeed = 0;
-    for (i = 0; i < me.slots.length; i++) {
-        if (me.slots[i].type === 'ENGINE') {
-            me.maxSpeed += BASE_ENGINE_SPEED;
-        }
     }
 
     me.image = app.assetCollection.getImage(me.name + '-hull.png');
@@ -395,8 +418,7 @@ function Module (config) {
                 me.messages = [];
 
                 if (me.state === 'IMPULSE') {
-                    //TODO: Fix this
-                    me.ship.impulse(new SL.Vec2(0, 0).translateAlongRotation(me.impulse, me.ship.rotation).scale(me.impulse));
+                    me.ship.impulse(me.impulse);
                 }
             };
 

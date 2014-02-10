@@ -70,9 +70,10 @@
         },
         "ENGINE": {
             "fighter": {
-                "impulse": 5,
+                "impulse": 500,
                 "draw": 1,
                 "weight": 40,
+                "speed": 150,
                 "name": "fighter-engine",
                 "type": "ENGINE"
             }
