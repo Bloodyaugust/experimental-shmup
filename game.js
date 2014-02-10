@@ -3,7 +3,7 @@ SL = sugarLab;
 var CAMERA_OFFSET = new SL.Vec2(0, 0),
     BASE_ENGINE_SPEED = 50,
     MOMENTUM_PER_TON = 10,
-    MOMENTUM_DECAY_RATE = 100,
+    MOMENTUM_DECAY_RATE = 200,
     ANGULAR_DRAG_MODIFIER = 10;
 
 function logPlay() {
