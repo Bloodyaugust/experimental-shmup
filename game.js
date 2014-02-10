@@ -191,6 +191,8 @@ function Ship (config) {
 
     me.maxSpeed = 0;
 
+    me.team = 0;
+
     me.update = function () {
         var speed;
 
@@ -483,7 +485,48 @@ function Module (config) {
         me.messages.push(message);
     };
 
-    buildModule(me);
+    buildModule();
+}
+
+function Projectile (config) {
+    var me = this;
+
+    for (var i in config) {
+        me[i] = config[i];
+    }
+
+    var buildProjectile = function () {
+        me.SLUG = function () {
+            me.collider = new SL.Circle(me.location, me.size);
+
+            me.image = app.assetCollection.getImage('img/projectiles/' + me.name);
+
+            me.update = function () {
+                var ships = app.currentScene.getEntitiesByTag('SHIP');
+
+                me.location.translate(me.velocity.getScaled(app.deltaTime));
+
+                for (var i = 0; i < ships.length; i++) {
+                    if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
+                        //TODO: Collision logic
+                        app.currentScene.removeEntity(me);
+                    }
+                }
+            };
+
+            me.draw = function () {
+                app.camera.drawImage({
+                    image: me.image,
+                    location: me.location,
+                    angle: me.angle
+                });
+            };
+        };
+
+        me[me.type]();
+    };
+
+    buildProjectile();
 }
 
 function test () {
