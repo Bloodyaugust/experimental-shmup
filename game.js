@@ -24,7 +24,7 @@ function start() {
         });
         loadingScene.addEntity({
             percentLoaded: 0,
-            textLocation: new SL.Vec2(400, 300),
+            textLocation: new SL.Vec2(0, 0),
             update: function () {
                 if (app.assetCollection.getLoadedPercentage() === 100) {
                     app.transitionScene('menu');
@@ -33,7 +33,7 @@ function start() {
             draw: function (sctx) {
                 sctx.clearRect(0, 0, 800, 600);
                 app.camera.drawText({
-                    location: app.screenSize.getScaled(0.5),
+                    location: this.textLocation,
                     align: 'center',
                     text: app.assetCollection.getLoadedPercentage().toFixed() + '%',
                     color: 'green',
