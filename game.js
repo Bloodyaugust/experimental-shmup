@@ -281,6 +281,12 @@ function Ship (config) {
         }
     };
 
+    me.setModuleProjectile = function (module, projectile) {
+        if (module.isProjectileCompatible(projectile)) {
+            module.projectile = projectile;
+        }
+    };
+
     me.impulse = function (impulse) {
         me.momentum += impulse * app.deltaTime;
     };
@@ -404,6 +410,61 @@ function Module (config) {
             };
         };
 
+        me.MISSILE = function () {
+            me.timeToFire = 0;
+            me.currentClip = me.clip;
+            me.state = 'IDLE';
+
+            me.update = function () {
+                for (var i = 0; i < me.messages.length; i++) {
+                    if (me.messages[i] === 'FIRE') {
+                        if (me.state === 'IDLE') {
+                            me.state = 'FIRING';
+                        }
+                    }
+                }
+                me.messages = [];
+
+                if (me.state !== 'IDLE') {
+                    if (me.state === 'RELOAD') {
+                        me.timeToFire -= app.deltaTime;
+                        if (me.timeToFire <= 0) {
+                            me.timeToFire = 0;
+                            me.currentClip = me.clip;
+                            me.state = 'IDLE';
+                        }
+                    }
+
+                    if (me.state === 'FIRING' && me.currentClip > 0) {
+                        if (me.timeToFire > 0) {
+                            me.timeToFire -= app.deltaTime;
+                        } else {
+                            me.currentClip--;
+                            me.timeToFire = me.fireInterval;
+                            me.fire();
+
+                            if (me.currentClip < 1) {
+                                me.state = 'RELOAD';
+                                me.timeToFire = me.reloadTime;
+                            }
+                        }
+                    }
+                }
+            };
+
+            me.draw = function () {
+                app.camera.drawImage({
+                    image: me.image,
+                    location: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
+                    angle: me.ship.rotation
+                });
+            };
+
+            me.fire = function () {
+
+            };
+        };
+
         me.ENGINE = function () {
             me.state = 'IDLE';
 
@@ -470,6 +531,10 @@ function Module (config) {
             };
         };
 
+        me.isProjectileCompatible = function (projectile) {
+            return (me.projectileType === projectile.type);
+        };
+
         me[me.type]();
     };
 
@@ -495,16 +560,43 @@ function Projectile (config) {
         me[i] = config[i];
     }
 
+    //do this in the module fire() method
+    //me.collider = new SL.Circle(me.location, me.size);
+
+    me.image = app.assetCollection.getImage('img/projectiles/' + me.name);
+
     var buildProjectile = function () {
         me.SLUG = function () {
-            me.collider = new SL.Circle(me.location, me.size);
-
-            me.image = app.assetCollection.getImage('img/projectiles/' + me.name);
-
             me.update = function () {
                 var ships = app.currentScene.getEntitiesByTag('SHIP');
 
                 me.location.translate(me.velocity.getScaled(app.deltaTime));
+
+                for (var i = 0; i < ships.length; i++) {
+                    if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
+                        //TODO: Collision logic
+                        app.currentScene.removeEntity(me);
+                    }
+                }
+            };
+
+            me.draw = function () {
+                app.camera.drawImage({
+                    image: me.image,
+                    location: me.location,
+                    angle: me.angle
+                });
+            };
+        };
+
+        me.MISSILE = function () {
+            me.update = function () {
+                var ships = app.currentScene.getEntitiesByTag('SHIP'),
+                    targetAngle = me.target.collider.origin.angleBetween(me.collider.origin);
+
+                SL.Tween.lerp(me.angle, targetAngle, (me.angle + me.rotationSpeed * app.deltaTime) / Math.abs(targetAngle - me.angle));
+
+                me.location.translateAlongRotation(me.speed * app.deltaTime, me.angle);
 
                 for (var i = 0; i < ships.length; i++) {
                     if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
@@ -545,11 +637,13 @@ function test () {
     testShip2.testID = 1;
 
     testShip.setSlotModule(testShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    testShip.setModuleProjectile(testShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
     testShip.setSlotModule(testShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
     testShip.setSlotModule(testShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
     testShip.setSlotModule(testShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
 
-    testShip2.setSlotModule(testShip2.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    testShip2.setSlotModule(testShip2.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
+    testShip2.setModuleProjectile(testShip2.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat']));
     testShip2.setSlotModule(testShip2.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
     testShip2.setSlotModule(testShip2.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
     testShip2.setSlotModule(testShip2.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));

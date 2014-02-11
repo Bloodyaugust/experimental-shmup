@@ -4,6 +4,7 @@
         "img/hulls/fighter-hull.png",
         "img/hulls/fighter-blaster.png",
         "img/hulls/fighter-engine.png",
+        "img/modules/fighter-missile.png",
         "img/projectiles/uranium-slug.png",
         "img/projectiles/heat-missile.png"
     ],
@@ -24,7 +25,7 @@
         "fighter": {
             "slots": [
                 {
-                    "type": "BLASTER",
+                    "type": "DYNAMIC",
                     "location": {
                         "x": 10,
                         "y": 0
@@ -72,6 +73,17 @@
                 "projectileType": "SLUG"
             }
         },
+        "MISSILE": {
+            "fighter": {
+                "weight": 75,
+                "type": "MISSILE",
+                "name": "fighter-missile",
+                "clip": 1,
+                "fireInterval": 1,
+                "reloadTime": 5,
+                "projectileType": "MISSILE"
+            }
+        },
         "ENGINE": {
             "fighter": {
                 "impulse": 500,
@@ -86,7 +98,7 @@
             "fighter": {
                 "impulse": 600,
                 "draw": 1,
-                "weight": 20,
+                "weight": 10,
                 "name": "fighter-attitude",
                 "type": "ATTITUDE"
             }
@@ -123,6 +135,7 @@
                 "damage": 30,
                 "penetration": 25,
                 "aoe": 5,
+                "type": "MISSILE",
                 "size": 5,
                 "name": "heat-missile"
             },
@@ -134,6 +147,7 @@
                 "damage": 60,
                 "penetration": 5,
                 "aoe": 50,
+                "type": "MISSILE",
                 "size": 15,
                 "name": "frag-missile"
             }
