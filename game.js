@@ -99,15 +99,15 @@ function start() {
 
             app.currentScene.addEntity({
                 update: function () {
-                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
-                        app.camera.offset = new SL.Vec2(400, 300).translate(app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.getScaled(-1));
+                    if (app.currentScene.getEntitiesByTag('SHIP')[2]) {
+                        app.camera.offset = new SL.Vec2(400, 300).translate(app.currentScene.getEntitiesByTag('SHIP')[2].collider.origin.getScaled(-1));
                     }
                 },
                 draw: function () {
                     var drawLocation = new SL.Vec2(0, 0);
 
-                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
-                        drawLocation = app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.clone();
+                    if (app.currentScene.getEntitiesByTag('SHIP')[2]) {
+                        drawLocation = app.currentScene.getEntitiesByTag('SHIP')[2].collider.origin.clone();
                     }
 
                     app.camera.drawImage({
@@ -175,6 +175,8 @@ function Ship (config) {
     me.messageBus = {
         ENGINE: [],
         BLASTER: [],
+        TURRET: [],
+        MISSILE: [],
         ATTITUDE: [],
         TARGET: []
     };
@@ -193,13 +195,15 @@ function Ship (config) {
 
     me.team = 0;
 
+    me.zIndex = 1;
+
     me.update = function () {
         var speed;
 
         for (var i in me.messageBus) {
             for (var i2 = 0; i2 < me.messageBus[i].length; i2++) {
                 for (var i3 = 0; i3 < me.blueprint.slots.length; i3++) {
-                    if (i === me.blueprint.slots[i3].type && me.blueprint.slots[i3].module) {
+                    if (me.blueprint.slots[i3].module && i === me.blueprint.slots[i3].module.type) {
                         me.blueprint.slots[i3].module.message(me.messageBus[i][i2]);
                     }
                 }
@@ -221,6 +225,12 @@ function Ship (config) {
 
         me.angularVelocity += (-me.angularVelocity / ANGULAR_DRAG_MODIFIER) * (me.weight / 100);
         me.rotation += me.angularVelocity * app.deltaTime;
+
+        if (me.rotation < 0) {
+            me.rotation = 360 - me.rotation;
+        } else if (me.rotation > 360) {
+            me.rotation = me.rotation - 360;
+        }
 
         me.momentum -= MOMENTUM_DECAY_RATE * app.deltaTime;
         me.momentum = SL.clamp(me.momentum, 0, (me.weight * MOMENTUM_PER_TON));
@@ -406,7 +416,14 @@ function Module (config) {
             };
 
             me.fire = function () {
+                var projectile = new Projectile(me.projectile);
 
+                projectile.collider = new SL.Circle(me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation), projectile.size);
+                projectile.angle = me.ship.rotation;
+                projectile.velocity = SL.Vec2.fromPolar(1, projectile.angle).scale(me.power / (projectile.weight / 2)).translate(me.ship.velocity);
+                projectile.team = me.ship.team;
+
+                app.currentScene.addEntity(projectile);
             };
         };
 
@@ -461,7 +478,16 @@ function Module (config) {
             };
 
             me.fire = function () {
+                var projectile = new Projectile(me.projectile);
 
+                projectile.collider = new SL.Circle(me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation), projectile.size);
+                projectile.angle = me.ship.rotation;
+                projectile.team = me.ship.team;
+
+                //TODO: switch to real target once target logic is complete
+                projectile.target = app.currentScene.getEntitiesByTag('SHIP')[0];
+
+                app.currentScene.addEntity(projectile);
             };
         };
 
@@ -560,6 +586,8 @@ function Projectile (config) {
         me[i] = config[i];
     }
 
+    me.zIndex = 2;
+
     //do this in the module fire() method
     //me.collider = new SL.Circle(me.location, me.size);
 
@@ -570,12 +598,13 @@ function Projectile (config) {
             me.update = function () {
                 var ships = app.currentScene.getEntitiesByTag('SHIP');
 
-                me.location.translate(me.velocity.getScaled(app.deltaTime));
+                me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
 
                 for (var i = 0; i < ships.length; i++) {
                     if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
                         //TODO: Collision logic
                         app.currentScene.removeEntity(me);
+                        break;
                     }
                 }
             };
@@ -583,7 +612,7 @@ function Projectile (config) {
             me.draw = function () {
                 app.camera.drawImage({
                     image: me.image,
-                    location: me.location,
+                    location: me.collider.origin,
                     angle: me.angle
                 });
             };
@@ -594,14 +623,19 @@ function Projectile (config) {
                 var ships = app.currentScene.getEntitiesByTag('SHIP'),
                     targetAngle = me.target.collider.origin.angleBetween(me.collider.origin);
 
-                SL.Tween.lerp(me.angle, targetAngle, (me.angle + me.rotationSpeed * app.deltaTime) / Math.abs(targetAngle - me.angle));
+                if (targetAngle < 0) {
+                    targetAngle += 360;
+                }
 
-                me.location.translateAlongRotation(me.speed * app.deltaTime, me.angle);
+                me.angle = SL.Tween.lerp(0, targetAngle, (me.angle + me.rotationSpeed * app.deltaTime) / Math.abs(targetAngle - me.angle));
+
+                me.collider.origin.translateAlongRotation(me.speed * app.deltaTime, me.angle);
 
                 for (var i = 0; i < ships.length; i++) {
                     if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
                         //TODO: Collision logic
                         app.currentScene.removeEntity(me);
+                        break;
                     }
                 }
             };
@@ -609,7 +643,7 @@ function Projectile (config) {
             me.draw = function () {
                 app.camera.drawImage({
                     image: me.image,
-                    location: me.location,
+                    location: me.collider.origin,
                     angle: me.angle
                 });
             };
@@ -627,14 +661,21 @@ function test () {
         location: new SL.Vec2(0, 0)
     });
 
-
     var testShip2 = new Ship({
         blueprint: 'fighter',
         location: new SL.Vec2(100, 0)
     });
 
+    var testShip3 = new Ship({
+        blueprint: 'corvette',
+        location: new SL.Vec2(0, 200)
+    });
+
     testShip.testID = 0;
     testShip2.testID = 1;
+
+    testShip2.team = 1;
+    testShip3.team = 2;
 
     testShip.setSlotModule(testShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
     testShip.setModuleProjectile(testShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
@@ -648,6 +689,23 @@ function test () {
     testShip2.setSlotModule(testShip2.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
     testShip2.setSlotModule(testShip2.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
 
+    testShip3.setSlotModule(testShip3.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[4], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[5], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
+    testShip3.setModuleProjectile(testShip3.blueprint.slots[5].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[6], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
+    testShip3.setModuleProjectile(testShip3.blueprint.slots[6].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[7], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    testShip3.setModuleProjectile(testShip3.blueprint.slots[7].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[8], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    testShip3.setModuleProjectile(testShip3.blueprint.slots[8].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[9], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[10], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+
     app.currentScene.addEntity(testShip);
     app.currentScene.addEntity(testShip2);
+    app.currentScene.addEntity(testShip3);
 }

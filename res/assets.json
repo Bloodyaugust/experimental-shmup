@@ -2,6 +2,7 @@
     "images": [
         "img/backgrounds/bg-1.png",
         "img/hulls/fighter-hull.png",
+        "img/hulls/corvette-hull.png",
         "img/hulls/fighter-blaster.png",
         "img/hulls/fighter-engine.png",
         "img/modules/fighter-missile.png",
@@ -57,6 +58,91 @@
             "maxWeight": 200,
             "size": 20,
             "name": "fighter"
+        },
+        "corvette": {
+            "slots": [
+                {
+                    "type": "ENGINE",
+                    "location": {
+                        "x": -20,
+                        "y": 0
+                    }
+                },
+                {
+                    "type": "ENGINE",
+                    "location": {
+                        "x": -16,
+                        "y": -16
+                    }
+                },
+                {
+                    "type": "ENGINE",
+                    "location": {
+                        "x": -16,
+                        "y": 16
+                    }
+                },
+                {
+                    "type": "ENGINE",
+                    "location": {
+                        "x": -12,
+                        "y": -32
+                    }
+                },
+                {
+                    "type": "ENGINE",
+                    "location": {
+                        "x": -12,
+                        "y": 32
+                    }
+                },
+                {
+                    "type": "DYNAMIC",
+                    "location": {
+                        "x": -5,
+                        "y": -25
+                    }
+                },
+                {
+                    "type": "DYNAMIC",
+                    "location": {
+                        "x": -5,
+                        "y": 25
+                    }
+                },
+                {
+                    "type": "DYNAMIC",
+                    "location": {
+                        "x": 6,
+                        "y": -13
+                    }
+                },
+                {
+                    "type": "DYNAMIC",
+                    "location": {
+                        "x": 6,
+                        "y": 13
+                    }
+                },
+                {
+                    "type": "ATTITUDE",
+                    "location": {
+                        "x": -18,
+                        "y": -40
+                    }
+                },
+                {
+                    "type": "ATTITUDE",
+                    "location": {
+                        "x": -18,
+                        "y": 40
+                    }
+                }
+            ],
+            "weight": 500,
+            "maxWeight": 2000,
+            "size": 30,
+            "name": "corvette"
         }
     },
 
@@ -69,7 +155,19 @@
                 "clip": 2,
                 "fireInterval": 0.3,
                 "reloadTime": 1,
-                "power": 50,
+                "power": 750,
+                "projectileType": "SLUG"
+            }
+        },
+        "TURRET": {
+            "fighter": {
+                "weight": 50,
+                "type": "TURRET",
+                "name": "corvette-turret",
+                "clip": 5,
+                "fireInterval": 0.1,
+                "reloadTime": 5,
+                "power": 750,
                 "projectileType": "SLUG"
             }
         },
@@ -96,7 +194,7 @@
         },
         "ATTITUDE": {
             "fighter": {
-                "impulse": 600,
+                "impulse": 1000,
                 "draw": 1,
                 "weight": 10,
                 "name": "fighter-attitude",
