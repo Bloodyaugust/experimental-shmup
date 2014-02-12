@@ -139,39 +139,7 @@ function Ship (config) {
     newBlueprintConfig.ship = me;
 
     me.blueprint = new Blueprint(newBlueprintConfig);
-
-    /*
-    Messages will follow the below format
-    {
-        sendTo: [           //For ENGINE modules
-            "ENGINE"
-        ],
-        message: 'TOGGLE'
-
-        /////////////////////
-
-        sendTo: [
-            "BLASTER"
-        ],
-        message: 'FIRE'
-
-        /////////////////////
-
-        sendTo: [
-            "ATTITUDE"
-        ],
-        message: 0 || 1     //CLOCKWISE or COUNTER-CLOCKWISE
-
-        /////////////////////
-
-        sendTo: [
-            "SHIELD"
-        ],
-        message: 'TOGGLE'
-
-        /////////////////////
-    }
-    */
+    
     me.messageBus = {
         ENGINE: [],
         BLASTER: [],
@@ -272,21 +240,16 @@ function Ship (config) {
     me.setSlotModule = function (slot, module) {
         if (slot.isModuleCompatible(module)) {
             if (slot.module) {
-                if (me.weight - slot.module.weight + module.weight <= me.blueprint.maxWeight) {
-                    me.weight = me.weight - slot.module.weight + module.weight;
-                    slot.module = module;
-                    slot.module.ship = me;
-                    slot.module.slot = slot;
-                    me.evaluateMaxSpeed();
-                }
+                slot.module.removeFromShip();
+            }
+
+            module.addToShip(me, slot);
+
+            if (me.weight > me.blueprint.maxWeight) {
+                slot.module.removeFromShip();
             } else {
-                if (me.weight + module.weight <= me.blueprint.maxWeight) {
-                    me.weight = me.weight + module.weight;
-                    slot.module = module;
-                    slot.module.ship = me;
-                    slot.module.slot = slot;
-                    me.evaluateMaxSpeed();
-                }
+                me.evaluateMaxSpeed();
+                me.evaluateArmor();
             }
         }
     };
@@ -306,12 +269,24 @@ function Ship (config) {
     };
 
     me.evaluateMaxSpeed = function () {
+        me.maxSpeed = 0;
+
         for (var i = 0; i < me.blueprint.slots.length; i++) {
-            if (me.blueprint.slots[i].type === 'ENGINE' && me.blueprint.slots[i].module) {
+            if (me.blueprint.slots[i].module && me.blueprint.slots[i].module.type === 'ENGINE') {
                 me.maxSpeed += me.blueprint.slots[i].module.speed;
             }
         }
         me.maxSpeed /= (me.weight / 100);
+    };
+
+    me.evaluateArmor = function () {
+        me.armor = me.baseArmor;
+
+        for (var i = 0; i < me.blueprint.slots.length; i++) {
+            if (me.blueprint.slots[i].module && me.blueprint.slots[i].module.type === 'ARMOR') {
+                me.armor += me.blueprint.slots[i].module.armor;
+            }
+        }
     };
 }
 
@@ -425,6 +400,19 @@ function Module (config) {
 
                 app.currentScene.addEntity(projectile);
             };
+
+            me.addToShip = function (ship, slot) {
+                me.ship = ship;
+                me.slot = slot;
+                me.slot.module = me;
+                me.ship.weight += me.weight;
+            };
+
+            me.removeFromShip = function () {
+                me.ship.weight -= me.weight;
+                me.ship = null;
+                me.slot.module = null;
+            };
         };
 
         me.MISSILE = function () {
@@ -528,6 +516,12 @@ function Module (config) {
             me.draw = function () {
 
             };
+        };
+
+        me.ARMOR = function () {
+            me.update = function () {};
+
+            me.draw = function () {};
         };
 
         me.ATTITUDE = function () {

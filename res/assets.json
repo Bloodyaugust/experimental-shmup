@@ -54,7 +54,7 @@
                     }
                 }
             ],
-            "armor": 3,
+            "baseArmor": 3,
             "weight": 50,
             "maxWeight": 200,
             "size": 20,
@@ -140,7 +140,7 @@
                     }
                 }
             ],
-            "armor": 20,
+            "baseArmor": 20,
             "weight": 500,
             "maxWeight": 2000,
             "size": 30,
