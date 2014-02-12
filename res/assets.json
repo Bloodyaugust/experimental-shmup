@@ -54,6 +54,7 @@
                     }
                 }
             ],
+            "armor": 3,
             "weight": 50,
             "maxWeight": 200,
             "size": 20,
@@ -139,6 +140,7 @@
                     }
                 }
             ],
+            "armor": 20,
             "weight": 500,
             "maxWeight": 2000,
             "size": 30,
@@ -160,7 +162,7 @@
             }
         },
         "TURRET": {
-            "fighter": {
+            "corvette": {
                 "weight": 50,
                 "type": "TURRET",
                 "name": "corvette-turret",
@@ -181,6 +183,22 @@
                 "reloadTime": 5,
                 "projectileType": "MISSILE"
             }
+        },
+        "ARMOR": {
+            "ablative": {
+                "armor": 10,
+                "weight": 50,
+                "type": "ARMOR",
+                "description": "A light armor built to absorb the shock of few and small projectiles. Cheap and light, but not very effective.",
+                "name": "ablative-armor"
+            },
+            "steel-plate": {
+                "armor": 25,
+                "weight": 150,
+                "type": "ARMOR",
+                "description": "A low tech and heavy armor option that offers decent protection.",
+                "name": "ablative-armor"
+            },
         },
         "ENGINE": {
             "fighter": {
