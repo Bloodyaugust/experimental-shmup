@@ -139,7 +139,7 @@ function Ship (config) {
     newBlueprintConfig.ship = me;
 
     me.blueprint = new Blueprint(newBlueprintConfig);
-    
+
     me.messageBus = {
         ENGINE: [],
         BLASTER: [],
