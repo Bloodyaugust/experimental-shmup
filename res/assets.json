@@ -198,7 +198,7 @@
                 "type": "ARMOR",
                 "description": "A low tech and heavy armor option that offers decent protection.",
                 "name": "ablative-armor"
-            },
+            }
         },
         "ENGINE": {
             "fighter": {

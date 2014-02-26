@@ -1,6 +1,7 @@
 SL = sugarLab;
 
-var CAMERA_OFFSET = new SL.Vec2(0, 0),
+var SCREEN_SIZE = new SL.Vec2(800, 600),
+    CAMERA_OFFSET = new SL.Vec2(0, 0),
     BASE_ENGINE_SPEED = 50,
     MOMENTUM_PER_TON = 10,
     MOMENTUM_DECAY_RATE = 200,
@@ -14,7 +15,7 @@ function start() {
     var startLoad = new Date;
 
     window.app = new SL.Game({canvas: document.getElementById('GameCanvas')});
-    app.camera = new SL.Camera(app.sctx, new SL.Vec2(400, 300));
+    app.camera = new SL.Camera(app.sctx, SCREEN_SIZE.getScaled(0.5));
 
     app.assetCollection = new SL.AssetCollection('res/assets.json', app, function () {
         _gaq.push(['_trackEvent', 'Game', 'Load', '', (new Date - startLoad) / 1000]);
@@ -31,7 +32,7 @@ function start() {
                 }
             },
             draw: function (sctx) {
-                sctx.clearRect(0, 0, 800, 600);
+                sctx.clearRect(0, 0, SCREEN_SIZE.x, SCREEN_SIZE.y);
                 app.camera.drawText({
                     location: this.textLocation,
                     align: 'center',
@@ -100,7 +101,7 @@ function start() {
             app.currentScene.addEntity({
                 update: function () {
                     if (app.currentScene.getEntitiesByTag('SHIP')[2]) {
-                        app.camera.offset = new SL.Vec2(400, 300).translate(app.currentScene.getEntitiesByTag('SHIP')[2].collider.origin.getScaled(-1));
+                        app.camera.offset = SCREEN_SIZE.getScaled(0.5).translate(app.currentScene.getEntitiesByTag('SHIP')[2].collider.origin.getScaled(-1));
                     }
                 },
                 draw: function () {
@@ -115,6 +116,18 @@ function start() {
                         location: drawLocation
                     });
                 }
+            });
+
+            app.currentScene.addEntity({
+                update: function () {},
+                draw: function () {
+                    app.camera.drawText({
+                        text: 'FPS: ' + app.fps,
+                        color: 'red',
+                        location: app.camera.offset.getScaled(-1).translate(new SL.Vec2(5, 15))
+                    })
+                },
+                zIndex: 5
             });
             test();
         });
@@ -400,19 +413,6 @@ function Module (config) {
 
                 app.currentScene.addEntity(projectile);
             };
-
-            me.addToShip = function (ship, slot) {
-                me.ship = ship;
-                me.slot = slot;
-                me.slot.module = me;
-                me.ship.weight += me.weight;
-            };
-
-            me.removeFromShip = function () {
-                me.ship.weight -= me.weight;
-                me.ship = null;
-                me.slot.module = null;
-            };
         };
 
         me.MISSILE = function () {
@@ -561,6 +561,19 @@ function Module (config) {
     for (var i in config) {
         me[i] = config[i];
     }
+
+    me.addToShip = function (ship, slot) {
+        me.ship = ship;
+        me.slot = slot;
+        me.slot.module = me;
+        me.ship.weight += me.weight;
+    };
+
+    me.removeFromShip = function () {
+        me.ship.weight -= me.weight;
+        me.ship = null;
+        me.slot.module = null;
+    };      
 
     me.image = app.assetCollection.getImage(me.name);
 
