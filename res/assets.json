@@ -246,8 +246,8 @@
             "heat": {
                 "description": "A small missile with a shaped HEAT warhead, for high penetration and low AOE.",
                 "fuel": 150,
-                "speed": 100,
-                "rotationSpeed": 45,
+                "speed": 300,
+                "rotationSpeed": 205,
                 "damage": 30,
                 "penetration": 25,
                 "aoe": 5,
@@ -258,8 +258,8 @@
             "frag": {
                 "description": "A small missile designed to splinter on impact, for high damage but low penetration.",
                 "fuel": 150,
-                "speed": 100,
-                "rotationSpeed": 45,
+                "speed": 300,
+                "rotationSpeed": 205,
                 "damage": 60,
                 "penetration": 5,
                 "aoe": 50,

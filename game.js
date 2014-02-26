@@ -100,15 +100,15 @@ function start() {
 
             app.currentScene.addEntity({
                 update: function () {
-                    if (app.currentScene.getEntitiesByTag('SHIP')[2]) {
-                        app.camera.offset = SCREEN_SIZE.getScaled(0.5).translate(app.currentScene.getEntitiesByTag('SHIP')[2].collider.origin.getScaled(-1));
+                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
+                        app.camera.offset = SCREEN_SIZE.getScaled(0.5).translate(app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.getScaled(-1));
                     }
                 },
                 draw: function () {
                     var drawLocation = new SL.Vec2(0, 0);
 
-                    if (app.currentScene.getEntitiesByTag('SHIP')[2]) {
-                        drawLocation = app.currentScene.getEntitiesByTag('SHIP')[2].collider.origin.clone();
+                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
+                        drawLocation = app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.clone();
                     }
 
                     app.camera.drawImage({
@@ -153,13 +153,16 @@ function Ship (config) {
 
     me.blueprint = new Blueprint(newBlueprintConfig);
 
+    me.dead = false;
+
     me.messageBus = {
         ENGINE: [],
         BLASTER: [],
         TURRET: [],
         MISSILE: [],
         ATTITUDE: [],
-        TARGET: []
+        TARGET: [],
+        COLLISION: []
     };
 
     me.collider = new SL.Circle(config.location, me.blueprint.size);
@@ -174,12 +177,21 @@ function Ship (config) {
 
     me.maxSpeed = 0;
 
+    me.integrity = 1;
+    me.baseArmor = me.blueprint.baseArmor;
+    me.armor = me.baseArmor;
+
     me.team = 0;
 
     me.zIndex = 1;
 
     me.update = function () {
         var speed;
+
+        for (i = 0; i < me.messageBus.COLLISION.length; i++) {
+            me.evaluateCollision(me.messageBus.COLLISION[i]);
+            me.evaluateIntegrity();
+        }
 
         for (var i in me.messageBus) {
             for (var i2 = 0; i2 < me.messageBus[i].length; i2++) {
@@ -215,6 +227,10 @@ function Ship (config) {
 
         me.momentum -= MOMENTUM_DECAY_RATE * app.deltaTime;
         me.momentum = SL.clamp(me.momentum, 0, (me.weight * MOMENTUM_PER_TON));
+
+        if (me.dead) {
+            app.currentScene.removeEntity(me);
+        }
     };
 
     me.draw = function () {
@@ -262,7 +278,6 @@ function Ship (config) {
                 slot.module.removeFromShip();
             } else {
                 me.evaluateMaxSpeed();
-                me.evaluateArmor();
             }
         }
     };
@@ -292,13 +307,17 @@ function Ship (config) {
         me.maxSpeed /= (me.weight / 100);
     };
 
-    me.evaluateArmor = function () {
-        me.armor = me.baseArmor;
+    me.evaluateCollision = function (collision) {
+        var actualDamage = SL.Tween.quadIn(collision.damage, collision.penetration / me.armor);
 
-        for (var i = 0; i < me.blueprint.slots.length; i++) {
-            if (me.blueprint.slots[i].module && me.blueprint.slots[i].module.type === 'ARMOR') {
-                me.armor += me.blueprint.slots[i].module.armor;
-            }
+        me.integrity -= actualDamage / me.weight;
+    };
+
+    me.evaluateIntegrity = function () {
+        var deathChance = SL.Tween.quadInOut(1, me.integrity);
+
+        if (Math.random() >= deathChance) {
+            me.dead = true;
         }
     };
 }
@@ -567,12 +586,16 @@ function Module (config) {
         me.slot = slot;
         me.slot.module = me;
         me.ship.weight += me.weight;
+
+        me.armor ? me.ship.armor += me.armor : null;
     };
 
     me.removeFromShip = function () {
         me.ship.weight -= me.weight;
         me.ship = null;
         me.slot.module = null;
+
+        me.armor ? me.ship.armor -= me.armor : null;
     };      
 
     me.image = app.assetCollection.getImage(me.name);
@@ -609,7 +632,11 @@ function Projectile (config) {
 
                 for (var i = 0; i < ships.length; i++) {
                     if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
-                        //TODO: Collision logic
+                        ships[i].message('COLLISION', {
+                            damage: me.damage,
+                            penetration: me.penetration
+                        });
+
                         app.currentScene.removeEntity(me);
                         break;
                     }
@@ -626,24 +653,33 @@ function Projectile (config) {
         };
 
         me.MISSILE = function () {
+            me.momentum = 0;
+
             me.update = function () {
-                var ships = app.currentScene.getEntitiesByTag('SHIP'),
-                    targetAngle = me.target.collider.origin.angleBetween(me.collider.origin);
+                if (me.target.dead !== null && !me.target.dead) {
+                    var ships = app.currentScene.getEntitiesByTag('SHIP'),
+                        targetAngle = me.target.collider.origin.angleBetween(me.collider.origin);
 
-                if (targetAngle < 0) {
-                    targetAngle += 360;
-                }
+                    me.momentum < 1 ? me.momentum += app.deltaTime : null;
 
-                me.angle = SL.Tween.lerp(0, targetAngle, (me.angle + me.rotationSpeed * app.deltaTime) / Math.abs(targetAngle - me.angle));
+                    me.angle += me.rotationSpeed * SL.rotateLeftRight(me.angle, targetAngle) * app.deltaTime;
+                    me.angle = SL.wrapAngle(me.angle);
 
-                me.collider.origin.translateAlongRotation(me.speed * app.deltaTime, me.angle);
+                    me.collider.origin.translateAlongRotation(SL.Tween.quadIn(me.speed, me.momentum) * app.deltaTime, me.angle);
 
-                for (var i = 0; i < ships.length; i++) {
-                    if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
-                        //TODO: Collision logic
-                        app.currentScene.removeEntity(me);
-                        break;
+                    for (var i = 0; i < ships.length; i++) {
+                        if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
+                            ships[i].message('COLLISION', {
+                                damage: me.damage,
+                                penetration: me.penetration
+                            });
+
+                            app.currentScene.removeEntity(me);
+                            break;
+                        }
                     }
+                } else {
+                    app.currentScene.removeEntity(me);
                 }
             };
 
