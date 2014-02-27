@@ -212,10 +212,19 @@
         },
         "ATTITUDE": {
             "fighter": {
-                "impulse": 1000,
+                "impulse": 800,
                 "draw": 1,
                 "weight": 10,
+                "speed": 150,
                 "name": "fighter-attitude",
+                "type": "ATTITUDE"
+            },
+            "corvette": {
+                "impulse": 3000,
+                "draw": 1,
+                "weight": 10,
+                "speed": 500,
+                "name": "corvette-attitude",
                 "type": "ATTITUDE"
             }
         }

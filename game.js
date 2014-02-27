@@ -5,7 +5,8 @@ var SCREEN_SIZE = new SL.Vec2(800, 600),
     BASE_ENGINE_SPEED = 50,
     MOMENTUM_PER_TON = 10,
     MOMENTUM_DECAY_RATE = 200,
-    ANGULAR_DRAG_MODIFIER = 10;
+    WEIGHT_DRAG_MODIFIER = 50,
+    MAX_SPEED_WEIGHT_MODIFIER = 100;
 
 function logPlay() {
     _gaq.push(['_trackEvent', 'Button', 'Play']);
@@ -168,14 +169,16 @@ function Ship (config) {
     me.collider = new SL.Circle(config.location, me.blueprint.size);
     me.rotation = 90;
 
+    me.totalEngineSpeed = 0;
+    me.totalAttitudeSpeed = 0;
+
     me.velocity = new SL.Vec2(0, 0);
     me.angularVelocity = 0;
 
     me.momentum = 0;
+    me.angularMomentum = 0;
 
     me.weight = me.blueprint.weight;
-
-    me.maxSpeed = 0;
 
     me.integrity = 1;
     me.baseArmor = me.blueprint.baseArmor;
@@ -212,21 +215,21 @@ function Ship (config) {
             }
         }
 
-        speed = SL.Tween.quadIn(me.maxSpeed, me.momentum / (me.weight * MOMENTUM_PER_TON));
+        speed = SL.Tween.quadIn(me.totalEngineSpeed / (me.weight / MAX_SPEED_WEIGHT_MODIFIER), me.momentum / (me.weight * MOMENTUM_PER_TON));
         me.velocity = SL.Vec2.fromPolar(speed, me.rotation);
         me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
 
-        me.angularVelocity += (-me.angularVelocity / ANGULAR_DRAG_MODIFIER) * (me.weight / 100);
+        me.angularVelocity = SL.Tween.quadIn(me.totalAttitudeSpeed / (me.weight / MAX_SPEED_WEIGHT_MODIFIER),
+            Math.abs(me.angularMomentum) / (me.weight * MOMENTUM_PER_TON)) * SL.sign(me.angularMomentum);
         me.rotation += me.angularVelocity * app.deltaTime;
 
-        if (me.rotation < 0) {
-            me.rotation = 360 - me.rotation;
-        } else if (me.rotation > 360) {
-            me.rotation = me.rotation - 360;
-        }
+        me.rotation = SL.wrapAngle(me.rotation);
 
         me.momentum -= MOMENTUM_DECAY_RATE * app.deltaTime;
         me.momentum = SL.clamp(me.momentum, 0, (me.weight * MOMENTUM_PER_TON));
+
+        me.angularMomentum = SL.decayToZero(me.angularMomentum, MOMENTUM_DECAY_RATE * (me.weight / WEIGHT_DRAG_MODIFIER) * app.deltaTime);
+        me.angularMomentum = SL.clamp(me.angularMomentum, -(me.weight * MOMENTUM_PER_TON), (me.weight * MOMENTUM_PER_TON));
 
         if (me.dead) {
             app.currentScene.removeEntity(me);
@@ -276,8 +279,6 @@ function Ship (config) {
 
             if (me.weight > me.blueprint.maxWeight) {
                 slot.module.removeFromShip();
-            } else {
-                me.evaluateMaxSpeed();
             }
         }
     };
@@ -293,18 +294,7 @@ function Ship (config) {
     };
 
     me.angularImpulse = function (impulse) {
-        me.angularVelocity += impulse * (1 / me.weight);
-    };
-
-    me.evaluateMaxSpeed = function () {
-        me.maxSpeed = 0;
-
-        for (var i = 0; i < me.blueprint.slots.length; i++) {
-            if (me.blueprint.slots[i].module && me.blueprint.slots[i].module.type === 'ENGINE') {
-                me.maxSpeed += me.blueprint.slots[i].module.speed;
-            }
-        }
-        me.maxSpeed /= (me.weight / 100);
+        me.angularMomentum += impulse * app.deltaTime;
     };
 
     me.evaluateCollision = function (collision) {
@@ -588,14 +578,23 @@ function Module (config) {
         me.ship.weight += me.weight;
 
         me.armor ? me.ship.armor += me.armor : null;
+
+        if (me.speed) {
+            me.type === 'ENGINE' ? me.ship.totalEngineSpeed += me.speed : me.ship.totalAttitudeSpeed += me.speed;
+        }
     };
 
     me.removeFromShip = function () {
-        me.ship.weight -= me.weight;
-        me.ship = null;
-        me.slot.module = null;
+        if (me.speed) {
+            me.type === 'ENGINE' ? me.ship.totalEngineSpeed -= me.speed : me.ship.totalAttitudeSpeed -= me.speed;
+        }
 
         me.armor ? me.ship.armor -= me.armor : null;
+
+        me.ship.weight -= me.weight;
+
+        me.ship = null;
+        me.slot.module = null;
     };      
 
     me.image = app.assetCollection.getImage(me.name);
@@ -745,8 +744,8 @@ function test () {
     testShip3.setModuleProjectile(testShip3.blueprint.slots[7].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
     testShip3.setSlotModule(testShip3.blueprint.slots[8], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
     testShip3.setModuleProjectile(testShip3.blueprint.slots[8].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[9], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[10], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[9], new Module(app.assetCollection.assets['modules']['ATTITUDE']['corvette']));
+    testShip3.setSlotModule(testShip3.blueprint.slots[10], new Module(app.assetCollection.assets['modules']['ATTITUDE']['corvette']));
 
     app.currentScene.addEntity(testShip);
     app.currentScene.addEntity(testShip2);
