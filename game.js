@@ -697,6 +697,36 @@ function Projectile (config) {
     buildProjectile();
 }
 
+function AI (config) {
+    var me = this;
+
+    me.ships = config.ships;
+    me.team = config.team;
+    me.type = config.type;
+
+    me.update = config.update ? config.update.bind(me) : me.update;
+    me.draw = config.draw ? config.draw.bind(me) : me.draw;
+}
+
+AI.prototype.update = function () {
+    var me = this;
+
+    for (var i = 0; i < me.ships.length; i++) {
+        if (me.ships[i].dead === undefined || me.ships[i].dead) {
+            me.ships.slice(i, 1);
+            i--;
+        }
+    }
+};
+
+AI.prototype.draw = function () {};
+
+function EasyAI() {
+    var me = this;
+
+    AI.prototype.update.call(me);
+}
+
 function test () {
     var testShip = new Ship({
         blueprint: 'fighter',
