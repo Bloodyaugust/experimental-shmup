@@ -184,7 +184,9 @@ function Ship (config) {
     me.baseArmor = me.blueprint.baseArmor;
     me.armor = me.baseArmor;
 
-    me.team = 0;
+    me.team = config.team || 0;
+
+    me.target = null;
 
     me.zIndex = 1;
 
@@ -194,6 +196,10 @@ function Ship (config) {
         for (i = 0; i < me.messageBus.COLLISION.length; i++) {
             me.evaluateCollision(me.messageBus.COLLISION[i]);
             me.evaluateIntegrity();
+        }
+
+        for (i = 0; i < me.messageBus.TARGET.length; i++) {
+            me.target = me.messageBus.TARGET[i];
         }
 
         for (var i in me.messageBus) {
@@ -499,6 +505,8 @@ function Module (config) {
                         } else {
                             me.state = 'IDLE'
                         }
+                    } else if (me.messages[i] === 'IDLE' || me.messages[i] === 'IMPULSE') {
+                        me.state = me.messages[i];
                     }
                 }
                 me.messages = [];
@@ -542,7 +550,7 @@ function Module (config) {
                 }
                 me.messages = [];
 
-                if (me.state > 0) {
+                if (me.state !== 0) {
                     if (me.state === 1) {
                         me.ship.angularImpulse(me.impulse);
                     } else {
@@ -700,84 +708,110 @@ function Projectile (config) {
 function AI (config) {
     var me = this;
 
-    me.ships = config.ships;
+    me.ship = config.ship;
     me.team = config.team;
     me.type = config.type;
 
+    me.target = null;
+
+    me.disabled = false;
+
     me.update = config.update ? config.update.bind(me) : me.update;
     me.draw = config.draw ? config.draw.bind(me) : me.draw;
+
+    app.currentScene.addEntity(me);
 }
 
 AI.prototype.update = function () {
+    var me = this,
+        ships = app.currentScene.getEntitiesByTag('SHIP');
+
+
+    if (me.ship.dead === undefined || me.ship.dead === null || me.ship.dead) {
+        me.disabled = true;
+    } else  {
+        ships.map(function (d, i, a) {
+            if (d.team === me.team || d.dead) {
+                a.slice(i, 1);
+            }
+        });
+
+        if (!me.target || me.target.dead === undefined || me.target.dead === null) {
+            me.target = ships[Math.floor(Math.random() * ships.length)];
+        }
+        if (me.target) {
+            me.ship.message('TARGET', me.target);
+        }
+    }
+};
+
+AI.prototype.lateUpdate = function () {
     var me = this;
 
-    for (var i = 0; i < me.ships.length; i++) {
-        if (me.ships[i].dead === undefined || me.ships[i].dead) {
-            me.ships.slice(i, 1);
-            i--;
-        }
+    if (me.disabled || me.ship.dead === undefined || me.ship.dead === null || me.ship.dead) {
+        app.currentScene.removeEntity(me);
     }
 };
 
 AI.prototype.draw = function () {};
 
 function EasyAI() {
-    var me = this;
+    var me = this,
+        firingRotationDeviance = 10,
+        stoppingDistance = 300,
+        targetRotation;
 
     AI.prototype.update.call(me);
+
+    if (!me.disabled && me.target) {
+        targetRotation = SL.wrapAngle(me.ship.collider.origin.angleBetween(me.target.collider.origin) + 180);
+
+        me.ship.message('ATTITUDE', SL.rotateLeftRight(me.ship.rotation, targetRotation));
+        if (me.ship.collider.origin.distance(me.target.collider) <= stoppingDistance) {
+            me.ship.message('ENGINE', 'IDLE');
+        } else {
+            me.ship.message('ENGINE', 'IMPULSE');
+        }
+
+        if (Math.abs(targetRotation - me.ship.rotation) <= firingRotationDeviance) {
+            me.ship.message('BLASTER', 'FIRE');
+        }
+        me.ship.message('MISSILE', 'FIRE');
+    }
+
+    AI.prototype.lateUpdate.call(me);
+}
+
+function createEasyFighter (config) {
+    var newShip = new Ship({
+        blueprint: 'fighter',
+        location: config.location,
+        team: config.team
+    });
+
+    newShip.setSlotModule(newShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    newShip.setModuleProjectile(newShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
+    newShip.setSlotModule(newShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+    newShip.setSlotModule(newShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+    newShip.setSlotModule(newShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+
+    app.currentScene.addEntity(newShip);
+
+    new AI({
+        ship: newShip,
+        team: config.team,
+        type: 'EASY',
+        update: EasyAI
+    });
 }
 
 function test () {
-    var testShip = new Ship({
-        blueprint: 'fighter',
-        location: new SL.Vec2(0, 0)
-    });
+    var testRange = new SL.Vec2(100, 100);
 
-    var testShip2 = new Ship({
-        blueprint: 'fighter',
-        location: new SL.Vec2(100, 0)
-    });
-
-    var testShip3 = new Ship({
-        blueprint: 'corvette',
-        location: new SL.Vec2(0, 200)
-    });
-
-    testShip.testID = 0;
-    testShip2.testID = 1;
-
-    testShip2.team = 1;
-    testShip3.team = 2;
-
-    testShip.setSlotModule(testShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
-    testShip.setModuleProjectile(testShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
-    testShip.setSlotModule(testShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    testShip.setSlotModule(testShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
-    testShip.setSlotModule(testShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
-
-    testShip2.setSlotModule(testShip2.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
-    testShip2.setModuleProjectile(testShip2.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat']));
-    testShip2.setSlotModule(testShip2.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    testShip2.setSlotModule(testShip2.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
-    testShip2.setSlotModule(testShip2.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
-
-    testShip3.setSlotModule(testShip3.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[4], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[5], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
-    testShip3.setModuleProjectile(testShip3.blueprint.slots[5].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[6], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
-    testShip3.setModuleProjectile(testShip3.blueprint.slots[6].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[7], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
-    testShip3.setModuleProjectile(testShip3.blueprint.slots[7].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[8], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
-    testShip3.setModuleProjectile(testShip3.blueprint.slots[8].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[9], new Module(app.assetCollection.assets['modules']['ATTITUDE']['corvette']));
-    testShip3.setSlotModule(testShip3.blueprint.slots[10], new Module(app.assetCollection.assets['modules']['ATTITUDE']['corvette']));
-
-    app.currentScene.addEntity(testShip);
-    app.currentScene.addEntity(testShip2);
-    app.currentScene.addEntity(testShip3);
+    for (var i = 0; i < 2; i++) {
+        createEasyFighter({
+            team: Math.floor(Math.random() * 999999),
+            location: testRange.randomize()
+        });
+    }
 }
