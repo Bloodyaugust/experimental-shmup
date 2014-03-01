@@ -3,6 +3,7 @@ SL = sugarLab;
 var SCREEN_SIZE = new SL.Vec2(800, 600),
     CAMERA_OFFSET = new SL.Vec2(0, 0),
     BASE_ENGINE_SPEED = 50,
+    CAMERA_SWITCH_TIME = 10,
     MOMENTUM_PER_TON = 10,
     MOMENTUM_DECAY_RATE = 200,
     MOMENTUM_POUND_DECAY_RATE = 50,
@@ -102,16 +103,43 @@ function start() {
             var bg = app.assetCollection.getImage('bg-1');
 
             app.currentScene.addEntity({
+                lastTeam: 50,
+                timeToSwitch: CAMERA_SWITCH_TIME,
+                currentShip: null,
                 update: function () {
-                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
-                        app.camera.offset = SCREEN_SIZE.getScaled(0.5).translate(app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.getScaled(-1));
+                    var ships = app.currentScene.getEntitiesByTag('SHIP'),
+                        fighters = ships.filter(function (d) {
+                            return (d.blueprint.name === 'fighter');
+                        }),
+                        corvettes = ships.filter(function (d) {
+                            return (d.blueprint.name === 'corvette');
+                        });
+
+                    this.timeToSwitch -= app.deltaTime;
+                    if (this.timeToSwitch <= 0 || this.currentShip === null || this.currentShip.dead || this.currentShip.dead === null) {
+                        this.timeToSwitch = CAMERA_SWITCH_TIME;
+                        this.currentShip = ships[Math.floor(Math.random() * ships.length)];
+                    }
+                    app.camera.offset = SCREEN_SIZE.getScaled(0.5).translate(this.currentShip.collider.origin.getScaled(-1));
+
+                    for (var i = fighters.length; i < 20; i++) {
+                        createEasyFighter({
+                            team: ++this.lastTeam,
+                            location: new SL.Vec2(1000, 1000).randomize()
+                        });
+                    }
+                    for (i = corvettes.length; i < 5; i++) {
+                        createEasyCorvette({
+                            team: ++this.lastTeam,
+                            location: new SL.Vec2(1000, 1000).randomize()
+                        });
                     }
                 },
                 draw: function () {
                     var drawLocation = new SL.Vec2(0, 0);
 
-                    if (app.currentScene.getEntitiesByTag('SHIP')[0]) {
-                        drawLocation = app.currentScene.getEntitiesByTag('SHIP')[0].collider.origin.clone();
+                    if (this.currentShip && this.currentShip.dead !== null) {
+                        drawLocation = this.currentShip.collider.origin.clone();
                     }
 
                     app.camera.drawImage({
@@ -275,7 +303,6 @@ function Ship (config) {
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 55)),
             align: 'center'
         });
-         **/
         app.camera.drawText({
             text: me.entityID,
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 40)),
@@ -296,6 +323,7 @@ function Ship (config) {
             location: me.collider.origin.getTranslated(new SL.Vec2(0, -60)),
             align: 'center'
         });
+         **/
     };
 
     me.message = function(type, message) {
@@ -333,7 +361,7 @@ function Ship (config) {
     me.evaluateCollision = function (collision) {
         var actualDamage = SL.Tween.quadIn(collision.damage, collision.penetration / me.armor);
 
-        //me.integrity -= actualDamage / me.weight;
+        me.integrity -= actualDamage / me.weight;
     };
 
     me.evaluateIntegrity = function () {
@@ -842,11 +870,51 @@ function createEasyFighter (config) {
     });
 }
 
+function createEasyCorvette (config) {
+    var newShip = new Ship({
+        blueprint: 'corvette',
+        location: config.location,
+        team: config.team
+    });
+
+    newShip.setSlotModule(newShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['ENGINE']['corvette']));
+    newShip.setSlotModule(newShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['corvette']));
+    newShip.setSlotModule(newShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ENGINE']['corvette']));
+    newShip.setSlotModule(newShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ENGINE']['corvette']));
+    newShip.setSlotModule(newShip.blueprint.slots[4], new Module(app.assetCollection.assets['modules']['ENGINE']['corvette']));
+    newShip.setSlotModule(newShip.blueprint.slots[5], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
+    newShip.setModuleProjectile(newShip.blueprint.slots[5].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE'][(Math.random() >= 0.5 ? 'heat' : 'flak')]));
+    newShip.setSlotModule(newShip.blueprint.slots[6], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
+    newShip.setModuleProjectile(newShip.blueprint.slots[6].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE'][(Math.random() >= 0.5 ? 'heat' : 'flak')]));
+    newShip.setSlotModule(newShip.blueprint.slots[7], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    newShip.setModuleProjectile(newShip.blueprint.slots[7].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
+    newShip.setSlotModule(newShip.blueprint.slots[8], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+    newShip.setModuleProjectile(newShip.blueprint.slots[8].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
+    newShip.setSlotModule(newShip.blueprint.slots[9], new Module(app.assetCollection.assets['modules']['ATTITUDE']['corvette']));
+    newShip.setSlotModule(newShip.blueprint.slots[10], new Module(app.assetCollection.assets['modules']['ATTITUDE']['corvette']));
+
+    app.currentScene.addEntity(newShip);
+
+    new AI({
+        ship: newShip,
+        team: config.team,
+        type: 'EASY',
+        update: EasyAI
+    });
+}
+
 function test () {
     var testRange = new SL.Vec2(1000, 1000);
 
     for (var i = 0; i < 50; i++) {
         createEasyFighter({
+            team: i,
+            location: testRange.clone().randomize()
+        });
+    }
+
+    for (i = 0; i < 5; i++) {
+        createEasyCorvette({
             team: i,
             location: testRange.clone().randomize()
         });
