@@ -116,7 +116,8 @@ function start() {
                         image: bg,
                         location: drawLocation
                     });
-                }
+                },
+                zIndex: 0
             });
 
             app.currentScene.addEntity({
@@ -243,12 +244,14 @@ function Ship (config) {
     };
 
     me.draw = function () {
+        /**
         app.camera.drawCircle({
             origin: me.collider.origin,
             radius: me.collider.radius,
             lineColor: 'red',
             lineWidth: 2
         });
+         **/
 
         me.blueprint.draw();
 
@@ -258,6 +261,7 @@ function Ship (config) {
             }
         }
 
+        /**
         app.camera.drawText({
             text: me.velocity.x.toFixed(2) + '  ' + me.velocity.y.toFixed(2),
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 40)),
@@ -267,6 +271,27 @@ function Ship (config) {
         app.camera.drawText({
             text: me.angularVelocity.toFixed(2),
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 55)),
+            align: 'center'
+        });
+         **/
+        app.camera.drawText({
+            text: me.entityID,
+            location: me.collider.origin.getTranslated(new SL.Vec2(0, 40)),
+            align: 'center'
+        });
+        app.camera.drawText({
+            text: me.team,
+            location: me.collider.origin.getTranslated(new SL.Vec2(0, 60)),
+            align: 'center'
+        });
+        app.camera.drawText({
+            text: me.target ? me.target.entityID : '',
+            location: me.collider.origin.getTranslated(new SL.Vec2(0, -40)),
+            align: 'center'
+        });
+        app.camera.drawText({
+            text: me.target ? me.target.team : '',
+            location: me.collider.origin.getTranslated(new SL.Vec2(0, -60)),
             align: 'center'
         });
     };
@@ -487,8 +512,7 @@ function Module (config) {
                 projectile.angle = me.ship.rotation;
                 projectile.team = me.ship.team;
 
-                //TODO: switch to real target once target logic is complete
-                projectile.target = app.currentScene.getEntitiesByTag('SHIP')[0];
+                projectile.target = me.ship.target;
 
                 app.currentScene.addEntity(projectile);
             };
@@ -730,10 +754,8 @@ AI.prototype.update = function () {
     if (me.ship.dead === undefined || me.ship.dead === null || me.ship.dead) {
         me.disabled = true;
     } else  {
-        ships.map(function (d, i, a) {
-            if (d.team === me.team || d.dead) {
-                a.slice(i, 1);
-            }
+        ships = ships.filter(function (d) {
+            return !(d.team === me.team || d.dead);
         });
 
         if (!me.target || me.target.dead === undefined || me.target.dead === null) {
@@ -816,9 +838,9 @@ function createEasyFighter (config) {
 function test () {
     var testRange = new SL.Vec2(100, 100);
 
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < 3; i++) {
         createEasyFighter({
-            team: Math.floor(Math.random() * 999999),
+            team: Math.floor(Math.random()),
             location: testRange.randomize()
         });
     }
