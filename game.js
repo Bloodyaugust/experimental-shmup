@@ -5,6 +5,8 @@ var SCREEN_SIZE = new SL.Vec2(800, 600),
     BASE_ENGINE_SPEED = 50,
     MOMENTUM_PER_TON = 10,
     MOMENTUM_DECAY_RATE = 200,
+    MOMENTUM_POUND_DECAY_RATE = 50,
+    MOMENTUM_SLUG_MINIMUM = 0.75,
     WEIGHT_DRAG_MODIFIER = 50,
     MAX_SPEED_WEIGHT_MODIFIER = 100;
 
@@ -226,7 +228,7 @@ function Ship (config) {
         me.velocity = SL.Vec2.fromPolar(speed, me.rotation);
         me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
 
-        me.angularVelocity = SL.Tween.quadIn(me.totalAttitudeSpeed / (me.weight / MAX_SPEED_WEIGHT_MODIFIER),
+        me.angularVelocity = SL.Tween.quartOut(me.totalAttitudeSpeed / (me.weight / MAX_SPEED_WEIGHT_MODIFIER),
             Math.abs(me.angularMomentum) / (me.weight * MOMENTUM_PER_TON)) * SL.sign(me.angularMomentum);
         me.rotation += me.angularVelocity * app.deltaTime;
 
@@ -273,6 +275,7 @@ function Ship (config) {
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 55)),
             align: 'center'
         });
+         **/
         app.camera.drawText({
             text: me.entityID,
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 40)),
@@ -293,7 +296,6 @@ function Ship (config) {
             location: me.collider.origin.getTranslated(new SL.Vec2(0, -60)),
             align: 'center'
         });
-         **/
     };
 
     me.message = function(type, message) {
@@ -650,21 +652,32 @@ function Projectile (config) {
 
     var buildProjectile = function () {
         me.SLUG = function () {
+            me.maxMomentum = me.weight * MOMENTUM_PER_TON;
+            me.momentum = me.maxMomentum;
+
             me.update = function () {
-                var ships = app.currentScene.getEntitiesByTag('SHIP');
+                var ships = app.currentScene.getEntitiesByTag('SHIP'),
+                    momentumModifier;
 
-                me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
+                me.momentum -= app.deltaTime * MOMENTUM_POUND_DECAY_RATE;
+                momentumModifier = SL.Tween.quartOut(1, me.momentum / me.maxMomentum);
 
-                for (var i = 0; i < ships.length; i++) {
-                    if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
-                        ships[i].message('COLLISION', {
-                            damage: me.damage,
-                            penetration: me.penetration
-                        });
+                if (momentumModifier > MOMENTUM_SLUG_MINIMUM) {
+                    me.collider.origin.translate(me.velocity.getScaled(app.deltaTime));
 
-                        app.currentScene.removeEntity(me);
-                        break;
+                    for (var i = 0; i < ships.length; i++) {
+                        if (ships[i].team !== me.team && me.collider.intersects(ships[i].collider)) {
+                            ships[i].message('COLLISION', {
+                                damage: me.damage,
+                                penetration: me.penetration
+                            });
+
+                            app.currentScene.removeEntity(me);
+                            break;
+                        }
                     }
+                } else {
+                    app.currentScene.removeEntity(me);
                 }
             };
 
@@ -813,7 +826,7 @@ function createEasyFighter (config) {
         newShip.setSlotModule(newShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
     } else {
         newShip.setSlotModule(newShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
-        newShip.setModuleProjectile(newShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat'])); //TODO: (Math.random() >= 0.5 ? 'heat' : 'frag')
+        newShip.setModuleProjectile(newShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE'][(Math.random() >= 0.5 ? 'heat' : 'flak')]));
         newShip.setSlotModule(newShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
         newShip.setSlotModule(newShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
         newShip.setSlotModule(newShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
@@ -830,11 +843,11 @@ function createEasyFighter (config) {
 }
 
 function test () {
-    var testRange = new SL.Vec2(600, 300);
+    var testRange = new SL.Vec2(1000, 1000);
 
-    for (var i = 0; i < 20; i++) {
+    for (var i = 0; i < 50; i++) {
         createEasyFighter({
-            team: Math.floor(Math.random() * 3),
+            team: i,
             location: testRange.clone().randomize()
         });
     }

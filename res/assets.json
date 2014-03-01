@@ -7,7 +7,8 @@
         "img/hulls/fighter-engine.png",
         "img/modules/fighter-missile.png",
         "img/projectiles/uranium-slug.png",
-        "img/projectiles/heat-missile.png"
+        "img/projectiles/heat-missile.png",
+        "img/projectiles/flak-missile.png"
     ],
 
     "sounds": [
@@ -264,7 +265,7 @@
                 "size": 5,
                 "name": "heat-missile"
             },
-            "frag": {
+            "flak": {
                 "description": "A small missile designed to splinter on impact, for high damage but low penetration.",
                 "fuel": 150,
                 "speed": 300,
@@ -274,7 +275,7 @@
                 "aoe": 50,
                 "type": "MISSILE",
                 "size": 15,
-                "name": "frag-missile"
+                "name": "flak-missile"
             }
         }
     }
