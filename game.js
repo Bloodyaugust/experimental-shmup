@@ -273,7 +273,6 @@ function Ship (config) {
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 55)),
             align: 'center'
         });
-         **/
         app.camera.drawText({
             text: me.entityID,
             location: me.collider.origin.getTranslated(new SL.Vec2(0, 40)),
@@ -294,6 +293,7 @@ function Ship (config) {
             location: me.collider.origin.getTranslated(new SL.Vec2(0, -60)),
             align: 'center'
         });
+         **/
     };
 
     me.message = function(type, message) {
@@ -583,13 +583,7 @@ function Module (config) {
                 }
             };
 
-            me.draw = function () {
-                app.camera.drawCircle({
-                    origin: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
-                    radius: 3,
-                    lineColor: 'green'
-                })
-            };
+            me.draw = function () {};
         };
 
         me.isProjectileCompatible = function (projectile) {
@@ -836,11 +830,11 @@ function createEasyFighter (config) {
 }
 
 function test () {
-    var testRange = new SL.Vec2(100, 100);
+    var testRange = new SL.Vec2(600, 300);
 
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 20; i++) {
         createEasyFighter({
-            team: Math.floor(Math.random()),
+            team: Math.floor(Math.random() * 3),
             location: testRange.randomize()
         });
     }
