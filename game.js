@@ -835,7 +835,7 @@ function test () {
     for (var i = 0; i < 20; i++) {
         createEasyFighter({
             team: Math.floor(Math.random() * 3),
-            location: testRange.randomize()
+            location: testRange.clone().randomize()
         });
     }
 }
