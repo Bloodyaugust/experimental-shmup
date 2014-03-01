@@ -306,7 +306,7 @@ function Ship (config) {
     me.evaluateCollision = function (collision) {
         var actualDamage = SL.Tween.quadIn(collision.damage, collision.penetration / me.armor);
 
-        me.integrity -= actualDamage / me.weight;
+        //me.integrity -= actualDamage / me.weight;
     };
 
     me.evaluateIntegrity = function () {
@@ -789,11 +789,19 @@ function createEasyFighter (config) {
         team: config.team
     });
 
-    newShip.setSlotModule(newShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
-    newShip.setModuleProjectile(newShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
-    newShip.setSlotModule(newShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
-    newShip.setSlotModule(newShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
-    newShip.setSlotModule(newShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+    if (Math.random() >= 0.5) {
+        newShip.setSlotModule(newShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['BLASTER']['fighter']));
+        newShip.setModuleProjectile(newShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['SLUG']['uranium']));
+        newShip.setSlotModule(newShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+        newShip.setSlotModule(newShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+        newShip.setSlotModule(newShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+    } else {
+        newShip.setSlotModule(newShip.blueprint.slots[0], new Module(app.assetCollection.assets['modules']['MISSILE']['fighter']));
+        newShip.setModuleProjectile(newShip.blueprint.slots[0].module, new Projectile(app.assetCollection.assets['projectiles']['MISSILE']['heat'])); //TODO: (Math.random() >= 0.5 ? 'heat' : 'frag')
+        newShip.setSlotModule(newShip.blueprint.slots[1], new Module(app.assetCollection.assets['modules']['ENGINE']['fighter']));
+        newShip.setSlotModule(newShip.blueprint.slots[2], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+        newShip.setSlotModule(newShip.blueprint.slots[3], new Module(app.assetCollection.assets['modules']['ATTITUDE']['fighter']));
+    }
 
     app.currentScene.addEntity(newShip);
 
@@ -808,7 +816,7 @@ function createEasyFighter (config) {
 function test () {
     var testRange = new SL.Vec2(100, 100);
 
-    for (var i = 0; i < 2; i++) {
+    for (var i = 0; i < 50; i++) {
         createEasyFighter({
             team: Math.floor(Math.random() * 999999),
             location: testRange.randomize()
