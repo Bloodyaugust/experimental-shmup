@@ -4,6 +4,8 @@ var SCREEN_SIZE = new SL.Vec2(800, 600),
     CAMERA_OFFSET = new SL.Vec2(0, 0),
     BASE_ENGINE_SPEED = 50,
     CAMERA_SWITCH_TIME = 10,
+    CAMERA_MOVE_SPEED = 50,
+    CAMERA_OUTER_DISTANCE = 200,
     MOMENTUM_PER_TON = 10,
     MOMENTUM_DECAY_RATE = 200,
     MOMENTUM_POUND_DECAY_RATE = 50,
@@ -113,14 +115,19 @@ function start() {
                         }),
                         corvettes = ships.filter(function (d) {
                             return (d.blueprint.name === 'corvette');
-                        });
+                        }),
+                        cameraTarget;
 
                     this.timeToSwitch -= app.deltaTime;
                     if (this.timeToSwitch <= 0 || this.currentShip === null || this.currentShip.dead || this.currentShip.dead === null) {
                         this.timeToSwitch = CAMERA_SWITCH_TIME;
                         this.currentShip = ships[Math.floor(Math.random() * ships.length)];
                     }
-                    app.camera.offset = SCREEN_SIZE.getScaled(0.5).translate(this.currentShip.collider.origin.getScaled(-1));
+
+                    cameraTarget = SCREEN_SIZE.getScaled(0.5).translate(this.currentShip.collider.origin.getScaled(-1));
+                    app.camera.offset.translate(app.camera.offset.getDirectionVector(cameraTarget).getScaled(
+                        SL.Tween.quadIn(CAMERA_MOVE_SPEED, app.camera.offset.distance(cameraTarget) / CAMERA_OUTER_DISTANCE)
+                    ));
 
                     for (var i = fighters.length; i < 20; i++) {
                         createEasyFighter({
