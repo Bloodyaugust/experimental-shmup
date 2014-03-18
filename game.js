@@ -29,25 +29,14 @@ function start() {
 
         var loadingScene = new SL.Scene('loading', [], function () {
         });
-        loadingScene.addEntity({
-            percentLoaded: 0,
-            textLocation: new SL.Vec2(0, 0),
-            update: function () {
-                if (app.assetCollection.getLoadedPercentage() === 100) {
-                    app.transitionScene('menu');
-                }
-            },
-            draw: function (sctx) {
-                sctx.clearRect(0, 0, SCREEN_SIZE.x, SCREEN_SIZE.y);
-                app.camera.drawText({
-                    location: this.textLocation,
-                    align: 'center',
-                    text: app.assetCollection.getLoadedPercentage().toFixed() + '%',
-                    color: 'green',
-                    font: '72px Arial'
-                });
-            }
-        });
+
+        loadingScene.addEntity(new SL.Loader({
+            assetCollection: app.assetCollection,
+            screenSize: SCREEN_SIZE,
+            loadCallback: function () { app.transitionScene('menu'); },
+            barColor: 'blue',
+            textColor: 'green'
+        }));
 
         var menuScene = new SL.Scene('menu', [], function () {
             var modal = $('.modal');
@@ -658,7 +647,7 @@ function Module (config) {
 
         me.ship = null;
         me.slot.module = null;
-    };      
+    };
 
     me.image = app.assetCollection.getImage(me.name);
 
