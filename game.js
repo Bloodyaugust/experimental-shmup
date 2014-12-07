@@ -28,7 +28,7 @@ function start() {
         $('.canvas-container').append(domjs.build(templates.modal));
 
         var loadingScene = new SL.Scene('loading', [], function () {
-        });
+        }, app);
 
         loadingScene.addEntity(new SL.Loader({
             assetCollection: app.assetCollection,
@@ -48,7 +48,7 @@ function start() {
                 modal.off();
                 app.transitionScene($(this).attr('id'));
             });
-        });
+        }, app);
 
         var settingsScene = new SL.Scene('settings', [], function () {
             var modal = $('.modal');
@@ -118,13 +118,13 @@ function start() {
                         SL.Tween.quadIn(CAMERA_MOVE_SPEED, app.camera.offset.distance(cameraTarget) / CAMERA_OUTER_DISTANCE)
                     ));
 
-                    for (var i = fighters.length; i < 20; i++) {
+                    for (var i = fighters.length; i < 5; i++) {
                         createEasyFighter({
                             team: ++this.lastTeam,
                             location: new SL.Vec2(1000, 1000).randomize()
                         });
                     }
-                    for (i = corvettes.length; i < 5; i++) {
+                    for (i = corvettes.length; i < 1; i++) {
                         createEasyCorvette({
                             team: ++this.lastTeam,
                             location: new SL.Vec2(1000, 1000).randomize()
@@ -158,7 +158,7 @@ function start() {
                 zIndex: 5
             });
             test();
-        });
+        }, app);
 
         app.addScene(loadingScene);
         app.addScene(menuScene);
@@ -389,14 +389,6 @@ function Blueprint (config) {
     me.update = function () {
 
     };
-
-    me.draw = function () {
-        app.camera.drawImage({
-            image: me.image,
-            location: me.ship.collider.origin,
-            angle: me.ship.rotation
-        });
-    };
 }
 
 function Slot (config) {
@@ -461,14 +453,6 @@ function Module (config) {
                 }
             };
 
-            me.draw = function () {
-                app.camera.drawImage({
-                    image: me.image,
-                    location: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
-                    angle: me.ship.rotation
-                });
-            };
-
             me.fire = function () {
                 var projectile = new Projectile(me.projectile);
 
@@ -523,14 +507,6 @@ function Module (config) {
                 }
             };
 
-            me.draw = function () {
-                app.camera.drawImage({
-                    image: me.image,
-                    location: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
-                    angle: me.ship.rotation
-                });
-            };
-
             me.fire = function () {
                 var projectile = new Projectile(me.projectile);
 
@@ -565,22 +541,10 @@ function Module (config) {
                     me.ship.impulse(me.impulse);
                 }
             };
-
-            me.draw = function () {
-                app.camera.drawImage({
-                    image: me.image,
-                    location: me.ship.collider.origin.getTranslated(me.slot.location).rotate(me.ship.collider.origin, me.ship.rotation),
-                    angle: me.ship.rotation
-                });
-            };
         };
 
         me.UTILITY = function () {
             me.update = function () {
-
-            };
-
-            me.draw = function () {
 
             };
         };
@@ -608,8 +572,6 @@ function Module (config) {
                     }
                 }
             };
-
-            me.draw = function () {};
         };
 
         me.isProjectileCompatible = function (projectile) {
@@ -634,6 +596,10 @@ function Module (config) {
         if (me.speed) {
             me.type === 'ENGINE' ? me.ship.totalEngineSpeed += me.speed : me.ship.totalAttitudeSpeed += me.speed;
         }
+        me.sprite.anchor.x = 0.5;
+        me.sprite.anchor.y = 0.5;
+        me.sprite.position.x = me.slot.location.x;
+        me.sprite.position.y = me.slot.location.y;
     };
 
     me.removeFromShip = function () {
@@ -650,6 +616,7 @@ function Module (config) {
     };
 
     me.image = app.assetCollection.getImage(me.name);
+    me.sprite = new PIXI.Sprite(app.assetCollection.getTexture(me.name));
 
     me.messages = [];
 
@@ -704,14 +671,6 @@ function Projectile (config) {
                     app.currentScene.removeEntity(me);
                 }
             };
-
-            me.draw = function () {
-                app.camera.drawImage({
-                    image: me.image,
-                    location: me.collider.origin,
-                    angle: me.angle
-                });
-            };
         };
 
         me.MISSILE = function () {
@@ -720,12 +679,17 @@ function Projectile (config) {
             me.update = function () {
                 if (me.target.dead !== null && !me.target.dead) {
                     var ships = app.currentScene.getEntitiesByTag('SHIP'),
-                        targetAngle = me.target.collider.origin.angleBetween(me.collider.origin);
+                        targetAngle = me.target.collider.origin.angleBetween(me.collider.origin),
+                        rotationAmount = me.rotationSpeed * SL.rotateLeftRight(me.angle, targetAngle) * app.deltaTime;
 
                     me.momentum < 1 ? me.momentum += app.deltaTime : null;
 
-                    me.angle += me.rotationSpeed * SL.rotateLeftRight(me.angle, targetAngle) * app.deltaTime;
-                    me.angle = SL.wrapAngle(me.angle);
+                    if (Math.abs(rotationAmount) <= SL.rotationDistance(me.angle, targetAngle)) {
+                        me.angle += rotationAmount;
+                        me.angle = SL.wrapAngle(me.angle);
+                    } else {
+                        me.angle = targetAngle;
+                    }
 
                     me.collider.origin.translateAlongRotation(SL.Tween.quadIn(me.speed, me.momentum) * app.deltaTime, me.angle);
 
@@ -743,14 +707,6 @@ function Projectile (config) {
                 } else {
                     app.currentScene.removeEntity(me);
                 }
-            };
-
-            me.draw = function () {
-                app.camera.drawImage({
-                    image: me.image,
-                    location: me.collider.origin,
-                    angle: me.angle
-                });
             };
         };
 
@@ -804,10 +760,8 @@ AI.prototype.lateUpdate = function () {
     if (me.disabled || me.ship.dead === undefined || me.ship.dead === null || me.ship.dead) {
         app.currentScene.removeEntity(me);
     }
-};
-
-AI.prototype.draw = function () {};
-
+}
+;
 function EasyAI() {
     var me = this,
         firingRotationDeviance = 10,
@@ -902,14 +856,14 @@ function createEasyCorvette (config) {
 function test () {
     var testRange = new SL.Vec2(1000, 1000);
 
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < 5; i++) {
         createEasyFighter({
             team: i,
             location: testRange.clone().randomize()
         });
     }
 
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 1; i++) {
         createEasyCorvette({
             team: i,
             location: testRange.clone().randomize()
